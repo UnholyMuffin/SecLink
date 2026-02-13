@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🔐 Send Secure One-Time Passwords</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 700px;
+      width: 100%;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    h1 {
+      color: #2d3748;
+      font-size: 2em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    h1 span {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 5px 15px;
+      border-radius: 50px;
+      font-size: 0.5em;
+    }
+    
+    .subtitle {
+      color: #718096;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px dashed #e2e8f0;
+    }
+    
+    .form-group {
+      margin-bottom: 25px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #4a5568;
+      font-size: 0.95em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    input, textarea {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1em;
+      transition: all 0.3s;
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 1.1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .link-container {
+      margin-top: 30px;
+      padding: 25px;
+      background: #f7fafc;
+      border-radius: 16px;
+      border-left: 6px solid #48bb78;
+      display: none;
+    }
+    
+    .link-label {
+      font-size: 0.85em;
+      color: #48bb78;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .link-box {
+      display: flex;
+      gap: 10px;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 5px;
+    }
+    
+    .link-box input {
+      border: none;
+      background: transparent;
+      padding: 12px;
+      font-size: 0.95em;
+      color: #2d3748;
+    }
+    
+    .copy-btn {
+      background: #edf2f7;
+      border: none;
+      padding: 0 25px;
+      border-radius: 10px;
+      font-weight: 600;
+      color: #4a5568;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .copy-btn:hover {
+      background: #667eea;
+      color: white;
+    }
+    
+    .expiry-badge {
+      display: inline-block;
+      background: #fed7d7;
+      color: #c53030;
+      padding: 8px 16px;
+      border-radius: 50px;
+      font-size: 0.85em;
+      font-weight: 600;
+      margin-top: 15px;
+    }
+    
+    .message {
+      margin-top: 20px;
+      padding: 15px 20px;
+      border-radius: 12px;
+      display: none;
+    }
+    
+    .success {
+      background: #c6f6d5;
+      color: #22543d;
+      display: block;
+    }
+    
+    .error {
+      background: #fed7d7;
+      color: #742a2a;
+      display: block;
+    }
+    
+    .footer {
+      margin-top: 30px;
+      text-align: center;
+      color: #a0aec0;
+      font-size: 0.85em;
+    }
+    
+    hr {
+      margin: 30px 0;
+      border: none;
+      border-top: 2px dashed #e2e8f0;
+    }
+    
+    .preview {
+      background: #ebf8ff;
+      border-radius: 12px;
+      padding: 15px;
+      color: #2c5282;
+      font-size: 0.9em;
+      border-left: 4px solid #4299e1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card" id="app">
+      <h1>
+        🔐 One-Time Send
+        <span>1h expiry</span>
+      </h1>
+      <div class="subtitle">
+        Send passwords and secrets that self-destruct after 1 use
+      </div>
+      
+      <!-- GENERATOR FORM -->
+      <div id="generatorView">
+        <div class="form-group">
+          <label>🔑 Link Password (recipient must enter this)</label>
+          <input type="text" id="linkPassword" placeholder="e.g. Temp123! or Meeting2024" value="SecurePass123">
+          <small style="color: #718096; display: block; margin-top: 5px;">Recipient needs this password to open the link</small>
+        </div>
+        
+        <div class="form-group">
+          <label>📦 Secret Message (what you want to send)</label>
+          <textarea id="secretMessage" placeholder="Enter the password, file link, or secret message you want to send...">WiFi: CoffeeShop
+Password: latte123</textarea>
+          <small style="color: #718096; display: block; margin-top: 5px;">This is what the recipient will see after entering the correct password</small>
+        </div>
+        
+        <button class="btn" id="generateBtn">
+          ✨ Generate One-Time Link
+        </button>
+        
+        <div id="generatorMessage" class="message"></div>
+      </div>
+      
+      <!-- GENERATED LINK DISPLAY -->
+      <div id="linkContainer" class="link-container">
+        <div class="link-label">🔗 YOUR ONE-TIME LINK (expires in 1 hour)</div>
+        <div class="link-box">
+          <input type="text" id="generatedLink" readonly value="">
+          <button class="copy-btn" id="copyBtn">📋 Copy</button>
+        </div>
+        <div class="expiry-badge">
+          ⏳ Self-destructs in 60 minutes • One use only
+        </div>
+        <div class="preview" style="margin-top: 15px;">
+          <strong>📋 Preview:</strong> Recipient will need password <span id="previewPassword" style="background: #4299e1; color: white; padding: 2px 8px; border-radius: 50px;">SecurePass123</span>
+        </div>
+      </div>
+      
+      <hr>
+      
+      <div style="text-align: center; color: #4a5568;">
+        <strong>✉️ How to use:</strong><br>
+        <small>1. Set a password and your secret • 2. Generate link • 3. Share link with recipient • 4. They enter password • 5. Secret is revealed once and destroyed</small>
+      </div>
+      
+      <div class="footer">
+        ⚡ Each link works once • Expires in 60 minutes • 256-bit encrypted
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CLIENT-SIDE JAVASCRIPT
+    (function() {
+      "use strict";
+      
+      // Check if we're in view mode (recipient) or generator mode (sender)
+      google.script.url.getLocation(function(location) {
+        if (location.parameters.v && location.parameters.v[0] === 'view' && location.parameters.token) {
+          showRecipientView(location.parameters.token[0]);
+        } else {
+          showGeneratorView();
+        }
+      });
+      
+      // ============ SENDER VIEW (Generate links) ============
+      function showGeneratorView() {
+        const generatorView = document.getElementById('generatorView');
+        const linkContainer = document.getElementById('linkContainer');
+        if (generatorView) generatorView.style.display = 'block';
+        if (linkContainer) linkContainer.style.display = 'none';
+        
+        // Setup generate button
+        const generateBtn = document.getElementById('generateBtn');
+        if (generateBtn) {
+          generateBtn.addEventListener('click', function() {
+            const linkPassword = document.getElementById('linkPassword').value.trim();
+            const secretMessage = document.getElementById('secretMessage').value.trim();
+            
+            if (!linkPassword) {
+              showMessage('generatorMessage', '❌ Please set a link password', 'error');
+              return;
+            }
+            
+            if (!secretMessage) {
+              showMessage('generatorMessage', '❌ Please enter a secret message', 'error');
+              return;
+            }
+            
+            // Disable button
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '⏳ Generating...';
+            hideMessage('generatorMessage');
+            
+            // Call server
+            google.script.run
+              .withSuccessHandler(function(result) {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '✨ Generate One-Time Link';
+                
+                if (result && result.link) {
+                  // Show the link
+                  document.getElementById('generatedLink').value = result.link;
+                  document.getElementById('previewPassword').textContent = linkPassword;
+                  document.getElementById('linkContainer').style.display = 'block';
+                  showMessage('generatorMessage', '✅ Link generated! Copy and send it to your recipient.', 'success');
+                  
+                  // Scroll to link
+                  document.getElementById('linkContainer').scrollIntoView({ behavior: 'smooth' });
+                }
+              })
+              .withFailureHandler(function(error) {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '✨ Generate One-Time Link';
+                showMessage('generatorMessage', '❌ Error: ' + error.message, 'error');
+              })
+              .generateLink(linkPassword, secretMessage);
+          });
+        }
+        
+        // Setup copy button
+        const copyBtn = document.getElementById('copyBtn');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', function() {
+            const linkInput = document.getElementById('generatedLink');
+            linkInput.select();
+            document.execCommand('copy');
+            
+            // Visual feedback
+            copyBtn.textContent = '✅ Copied!';
+            setTimeout(() => {
+              copyBtn.textContent = '📋 Copy';
+            }, 2000);
+          });
+        }
+      }
+      
+      // ============ RECIPIENT VIEW (Open links) ============
+      function showRecipientView(token) {
+        const app = document.getElementById('app');
+        if (!app) return;
+        
+        // Clear and show password prompt
+        app.innerHTML = `
+          <div style="text-align: center;">
+            <div style="font-size: 50px; margin-bottom: 20px;">🔐</div>
+            <h1 style="color: #2d3748; margin-bottom: 10px;">Secure One-Time Link</h1>
+            <p style="color: #718096; margin-bottom: 30px;">This link will self-destruct after viewing</p>
+            
+            <div style="background: #f7fafc; border-radius: 20px; padding: 30px; margin: 20px 0;">
+              <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #4a5568;">
+                  🔑 Enter the password to reveal the secret
+                </label>
+                <input type="password" id="recipientPassword" 
+                       placeholder="Enter password" 
+                       style="width: 100%; padding: 15px 20px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.1em;">
+              </div>
+              
+              <button id="unlockBtn" class="btn" style="margin-bottom: 20px;">
+                🔓 Unlock Secret
+              </button>
+              
+              <div id="recipientMessage" class="message"></div>
+              
+              <div id="secretContainer" style="display: none; background: #48bb78; color: white; padding: 25px; border-radius: 16px; margin-top: 20px;">
+                <div style="font-size: 1.2em; margin-bottom: 15px;">✅ SECRET REVEALED</div>
+                <div id="secretContent" style="background: white; color: #2d3748; padding: 20px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-word; font-size: 1.1em;">
+                </div>
+                <p style="margin-top: 20px; color: #f0fff4; font-size: 0.9em;">
+                  ⚠️ This link has been destroyed and cannot be used again
+                </p>
+              </div>
+            </div>
+            
+            <div style="color: #a0aec0; font-size: 0.9em; margin-top: 20px;">
+              <span style="background: #fed7d7; color: #c53030; padding: 5px 15px; border-radius: 50px;">
+                ⏳ One hour expiry • One time use
+              </span>
+            </div>
+          </div>
+        `;
+        
+        // Setup unlock button
+        const unlockBtn = document.getElementById('unlockBtn');
+        const pwdField = document.getElementById('recipientPassword');
+        
+        function attemptUnlock() {
+          const password = pwdField.value.trim();
+          if (!password) {
+            showMessage('recipientMessage', '❌ Please enter a password', 'error');
+            return;
+          }
+          
+          unlockBtn.disabled = true;
+          unlockBtn.innerHTML = '⏳ Verifying...';
+          hideMessage('recipientMessage');
+          
+          google.script.run
+            .withSuccessHandler(function(response) {
+              unlockBtn.disabled = false;
+              unlockBtn.innerHTML = '🔓 Unlock Secret';
+              
+              if (response && response.success) {
+                // Show secret
+                document.getElementById('secretContainer').style.display = 'block';
+                document.getElementById('secretContent').textContent = response.secret;
+                showMessage('recipientMessage', response.message, 'success');
+                
+                // Disable password field
+                pwdField.disabled = true;
+                unlockBtn.disabled = true;
+              } else {
+                showMessage('recipientMessage', response.message || '❌ Failed to unlock', 'error');
+                unlockBtn.disabled = false;
+                unlockBtn.innerHTML = '🔓 Unlock Secret';
+              }
+            })
+            .withFailureHandler(function(error) {
+              unlockBtn.disabled = false;
+              unlockBtn.innerHTML = '🔓 Unlock Secret';
+              showMessage('recipientMessage', '❌ Server error: ' + error.message, 'error');
+            })
+            .consumeLink(token, password);
+        }
+        
+        unlockBtn.addEventListener('click', attemptUnlock);
+        pwdField.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') attemptUnlock();
+        });
+      }
+      
+      // Helper: Show message
+      function showMessage(elementId, text, type) {
+        const el = document.getElementById(elementId);
+        if (el) {
+          el.textContent = text;
+          el.className = 'message ' + type;
+          el.style.display = 'block';
+        }
+      }
+      
+      // Helper: Hide message
+      function hideMessage(elementId) {
+        const el = document.getElementById(elementId);
+        if (el) {
+          el.style.display = 'none';
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
