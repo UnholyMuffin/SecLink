@@ -1,4 +1,4 @@
-Here is a clean, GitHub‑ready README description with no emoji and no unnecessary fluff. It’s written in a clear, professional tone suitable for a public repository.
+<img width="1346" height="1420" alt="image" src="https://github.com/user-attachments/assets/c0065f28-72eb-4289-a26a-5030fcbda677" />
 
 ---
 
