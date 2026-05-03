@@ -1,8 +1,8 @@
+# One-Time Link Generator
+
 <img width="1346" height="1420" alt="image" src="https://github.com/user-attachments/assets/c0065f28-72eb-4289-a26a-5030fcbda677" />
 
 ---
-
-# One-Time Link Generator
 
 The One-Time Link Generator is a secure, lightweight web application built with Google Apps Script. It allows you to share sensitive information through single-use, password-protected links. Each link can be opened only once, expires automatically after one hour, and requires the recipient to enter a password before the secret is revealed.
 
