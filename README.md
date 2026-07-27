@@ -1,6 +1,6 @@
 # SecLink
 
-<img width="1346" height="1420" alt="image" src="https://github.com/user-attachments/assets/c0065f28-72eb-4289-a26a-5030fcbda677" />
+<img width="1348" height="1547" alt="image" src="https://github.com/user-attachments/assets/188f57d5-a380-4477-9e92-33041fece446" />
 
 ---
 
