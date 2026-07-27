@@ -1,5 +1,5 @@
 // ================================================
-// ONE-TIME LINK GENERATOR - WITH CUSTOM SECRETS
+// ONE-TIME LINK GENERATOR - WITH CUSTOM SECRETS & PASSWORDLESS OPTION
 // ================================================
 
 function doGet(e) {
@@ -9,25 +9,30 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-// GENERATE LINK with custom password AND custom secret
-function generateLink(linkPassword, secretMessage) {
+// GENERATE LINK with optional password
+function generateLink(linkPassword, secretMessage, isPasswordless) {
   const token = Utilities.getUuid();
   const now = new Date().getTime();
   const expiry = now + 60 * 60 * 1000; // 1 hour
   
-  // Hash the link password (what recipient needs to enter)
-  const passwordHash = Utilities.computeDigest(
-    Utilities.DigestAlgorithm.SHA_256, 
-    linkPassword
-  ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
-  
-  // Store everything
-  const data = {
-    hash: passwordHash,
-    secret: secretMessage,     // YOUR CUSTOM MESSAGE HERE
+  let data = {
+    secret: secretMessage,
     expiry: expiry,
-    used: false
+    used: false,
+    passwordless: isPasswordless || false
   };
+  
+  // Only hash password if not passwordless
+  if (!isPasswordless && linkPassword && linkPassword.trim() !== '') {
+    const passwordHash = Utilities.computeDigest(
+      Utilities.DigestAlgorithm.SHA_256, 
+      linkPassword
+    ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
+    data.hash = passwordHash;
+  } else {
+    // For passwordless, store a flag and no hash
+    data.hash = null;
+  }
   
   // Save to database
   PropertiesService.getScriptProperties().setProperty('ot_' + token, JSON.stringify(data));
@@ -72,7 +77,22 @@ function consumeLink(token, enteredPassword) {
     return { success: false, message: '❌ Link expired (1 hour lifetime)' }; 
   }
   
-  // Verify password
+  // Handle passwordless links
+  if (record.passwordless === true) {
+    // SUCCESS! No password needed
+    props.deleteProperty(key);
+    return { 
+      success: true, 
+      secret: record.secret,
+      message: '✅ Link verified! Your secret is below:'
+    };
+  }
+  
+  // Verify password for password-protected links
+  if (!enteredPassword || enteredPassword.trim() === '') {
+    return { success: false, message: '❌ Please enter a password' };
+  }
+  
   const attemptHash = Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256, 
     enteredPassword
@@ -90,6 +110,35 @@ function consumeLink(token, enteredPassword) {
     secret: record.secret,
     message: '✅ Link verified! Your secret is below:'
   };
+}
+
+// Check if link exists and get its type (for recipient view)
+function checkLinkExists(token) {
+  const props = PropertiesService.getScriptProperties();
+  const key = 'ot_' + token;
+  const storedJson = props.getProperty(key);
+  
+  if (!storedJson) {
+    return { exists: false };
+  }
+  
+  try {
+    const record = JSON.parse(storedJson);
+    const now = new Date().getTime();
+    
+    // Check if expired or used
+    if (now > record.expiry || record.used === true) {
+      props.deleteProperty(key);
+      return { exists: false };
+    }
+    
+    return { 
+      exists: true,
+      passwordless: record.passwordless || false
+    };
+  } catch (e) {
+    return { exists: false };
+  }
 }
 
 // Clean up expired links (optional - run on time trigger)

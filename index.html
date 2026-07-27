@@ -225,6 +225,41 @@
       font-size: 0.9em;
       border-left: 4px solid #4299e1;
     }
+    
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: #f7fafc;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+    }
+    
+    .checkbox-group input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    
+    .checkbox-group label {
+      margin: 0;
+      cursor: pointer;
+      font-weight: 500;
+      color: #4a5568;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 1em;
+    }
+    
+    .checkbox-group .hint {
+      color: #718096;
+      font-size: 0.85em;
+      font-weight: 400;
+      margin-left: 4px;
+    }
   </style>
 </head>
 <body>
@@ -246,11 +281,19 @@
           <small style="color: #718096; display: block; margin-top: 5px;">Recipient needs this password to open the link</small>
         </div>
         
+        <div class="checkbox-group">
+          <input type="checkbox" id="passwordlessToggle">
+          <label for="passwordlessToggle">
+            🔓 Make this link passwordless
+            <span class="hint">(no password required to view)</span>
+          </label>
+        </div>
+        
         <div class="form-group">
           <label>📦 Secret Message (what you want to send)</label>
           <textarea id="secretMessage" placeholder="Enter the password, file link, or secret message you want to send...">WiFi: CoffeeShop
 Password: latte123</textarea>
-          <small style="color: #718096; display: block; margin-top: 5px;">This is what the recipient will see after entering the correct password</small>
+          <small style="color: #718096; display: block; margin-top: 5px;">This is what the recipient will see after accessing the link</small>
         </div>
         
         <button class="btn" id="generateBtn">
@@ -309,15 +352,36 @@ Password: latte123</textarea>
         if (generatorView) generatorView.style.display = 'block';
         if (linkContainer) linkContainer.style.display = 'none';
         
+        // Toggle password field based on passwordless checkbox
+        const passwordlessToggle = document.getElementById('passwordlessToggle');
+        const linkPasswordField = document.getElementById('linkPassword');
+        
+        if (passwordlessToggle && linkPasswordField) {
+          passwordlessToggle.addEventListener('change', function() {
+            if (this.checked) {
+              linkPasswordField.disabled = true;
+              linkPasswordField.placeholder = '🔓 No password required';
+              linkPasswordField.style.opacity = '0.6';
+              linkPasswordField.value = '';
+            } else {
+              linkPasswordField.disabled = false;
+              linkPasswordField.placeholder = 'e.g. Temp123! or Meeting2024';
+              linkPasswordField.style.opacity = '1';
+              linkPasswordField.value = 'SecurePass123';
+            }
+          });
+        }
+        
         // Setup generate button
         const generateBtn = document.getElementById('generateBtn');
         if (generateBtn) {
           generateBtn.addEventListener('click', function() {
             const linkPassword = document.getElementById('linkPassword').value.trim();
             const secretMessage = document.getElementById('secretMessage').value.trim();
+            const isPasswordless = document.getElementById('passwordlessToggle').checked;
             
-            if (!linkPassword) {
-              showMessage('generatorMessage', '❌ Please set a link password', 'error');
+            if (!isPasswordless && !linkPassword) {
+              showMessage('generatorMessage', '❌ Please set a link password (or enable passwordless)', 'error');
               return;
             }
             
@@ -331,7 +395,7 @@ Password: latte123</textarea>
             generateBtn.innerHTML = '⏳ Generating...';
             hideMessage('generatorMessage');
             
-            // Call server
+            // Call server with passwordless flag
             google.script.run
               .withSuccessHandler(function(result) {
                 generateBtn.disabled = false;
@@ -340,7 +404,17 @@ Password: latte123</textarea>
                 if (result && result.link) {
                   // Show the link
                   document.getElementById('generatedLink').value = result.link;
-                  document.getElementById('previewPassword').textContent = linkPassword;
+                  
+                  // Update preview text based on passwordless mode
+                  const previewPassword = document.getElementById('previewPassword');
+                  if (isPasswordless) {
+                    previewPassword.textContent = '🔓 NO PASSWORD NEEDED';
+                    previewPassword.style.background = '#48bb78';
+                  } else {
+                    previewPassword.textContent = linkPassword;
+                    previewPassword.style.background = '#4299e1';
+                  }
+                  
                   document.getElementById('linkContainer').style.display = 'block';
                   showMessage('generatorMessage', '✅ Link generated! Copy and send it to your recipient.', 'success');
                   
@@ -353,7 +427,7 @@ Password: latte123</textarea>
                 generateBtn.innerHTML = '✨ Generate One-Time Link';
                 showMessage('generatorMessage', '❌ Error: ' + error.message, 'error');
               })
-              .generateLink(linkPassword, secretMessage);
+              .generateLink(linkPassword, secretMessage, isPasswordless);
           });
         }
         
@@ -379,94 +453,142 @@ Password: latte123</textarea>
         const app = document.getElementById('app');
         if (!app) return;
         
-        // Clear and show password prompt
-        app.innerHTML = `
-          <div style="text-align: center;">
-            <div style="font-size: 50px; margin-bottom: 20px;">🔐</div>
-            <h1 style="color: #2d3748; margin-bottom: 10px;">Secure One-Time Link</h1>
-            <p style="color: #718096; margin-bottom: 30px;">This link will self-destruct after viewing</p>
-            
-            <div style="background: #f7fafc; border-radius: 20px; padding: 30px; margin: 20px 0;">
-              <div style="margin-bottom: 25px;">
-                <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #4a5568;">
-                  🔑 Enter the password to reveal the secret
-                </label>
-                <input type="password" id="recipientPassword" 
-                       placeholder="Enter password" 
-                       style="width: 100%; padding: 15px 20px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.1em;">
-              </div>
-              
-              <button id="unlockBtn" class="btn" style="margin-bottom: 20px;">
-                🔓 Unlock Secret
-              </button>
-              
-              <div id="recipientMessage" class="message"></div>
-              
-              <div id="secretContainer" style="display: none; background: #48bb78; color: white; padding: 25px; border-radius: 16px; margin-top: 20px;">
-                <div style="font-size: 1.2em; margin-bottom: 15px;">✅ SECRET REVEALED</div>
-                <div id="secretContent" style="background: white; color: #2d3748; padding: 20px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-word; font-size: 1.1em;">
+        // First, check if the link exists and if it's passwordless
+        google.script.run
+          .withSuccessHandler(function(response) {
+            // If link doesn't exist or is expired
+            if (!response || !response.exists) {
+              app.innerHTML = `
+                <div style="text-align: center;">
+                  <div style="font-size: 50px; margin-bottom: 20px;">❌</div>
+                  <h1 style="color: #2d3748; margin-bottom: 10px; text-align: center; display: block; width: 100%;">Link Not Found</h1>
+                  <p style="color: #718096; text-align: center;">This link may have expired or already been used.</p>
                 </div>
-                <p style="margin-top: 20px; color: #f0fff4; font-size: 0.9em;">
-                  ⚠️ This link has been destroyed and cannot be used again
-                </p>
-              </div>
-            </div>
+              `;
+              return;
+            }
             
-            <div style="color: #a0aec0; font-size: 0.9em; margin-top: 20px;">
-              <span style="background: #fed7d7; color: #c53030; padding: 5px 15px; border-radius: 50px;">
-                ⏳ One hour expiry • One time use
-              </span>
-            </div>
-          </div>
-        `;
-        
-        // Setup unlock button
-        const unlockBtn = document.getElementById('unlockBtn');
-        const pwdField = document.getElementById('recipientPassword');
-        
-        function attemptUnlock() {
-          const password = pwdField.value.trim();
-          if (!password) {
-            showMessage('recipientMessage', '❌ Please enter a password', 'error');
-            return;
-          }
-          
-          unlockBtn.disabled = true;
-          unlockBtn.innerHTML = '⏳ Verifying...';
-          hideMessage('recipientMessage');
-          
-          google.script.run
-            .withSuccessHandler(function(response) {
-              unlockBtn.disabled = false;
-              unlockBtn.innerHTML = '🔓 Unlock Secret';
-              
-              if (response && response.success) {
-                // Show secret
-                document.getElementById('secretContainer').style.display = 'block';
-                document.getElementById('secretContent').textContent = response.secret;
-                showMessage('recipientMessage', response.message, 'success');
+            // Check if it's passwordless
+            const isPasswordless = response.passwordless || false;
+            
+            // Clear and show password prompt (or direct access for passwordless)
+            app.innerHTML = `
+              <div style="text-align: center;">
+                <div style="font-size: 50px; margin-bottom: 20px;">🔐</div>
+                <h1 style="color: #2d3748; margin-bottom: 10px; text-align: center; display: block; width: 100%;">Secure One-Time Link</h1>
+                <p style="color: #718096; margin-bottom: 30px; text-align: center;">This link will self-destruct after viewing</p>
                 
-                // Disable password field
-                pwdField.disabled = true;
-                unlockBtn.disabled = true;
-              } else {
-                showMessage('recipientMessage', response.message || '❌ Failed to unlock', 'error');
-                unlockBtn.disabled = false;
-                unlockBtn.innerHTML = '🔓 Unlock Secret';
-              }
-            })
-            .withFailureHandler(function(error) {
-              unlockBtn.disabled = false;
-              unlockBtn.innerHTML = '🔓 Unlock Secret';
-              showMessage('recipientMessage', '❌ Server error: ' + error.message, 'error');
-            })
-            .consumeLink(token, password);
-        }
-        
-        unlockBtn.addEventListener('click', attemptUnlock);
-        pwdField.addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') attemptUnlock();
-        });
+                <div style="background: #f7fafc; border-radius: 20px; padding: 30px; margin: 20px 0;">
+                  ${isPasswordless ? `
+                    <div style="margin-bottom: 25px; color: #48bb78; font-size: 1.2em; font-weight: 600;">
+                      🔓 This link is passwordless - click below to reveal the secret
+                    </div>
+                    <button id="unlockBtn" class="btn" style="margin-bottom: 20px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
+                      🔓 Reveal Secret
+                    </button>
+                  ` : `
+                    <div style="margin-bottom: 25px;">
+                      <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #4a5568;">
+                        🔑 Enter the password to reveal the secret
+                      </label>
+                      <input type="password" id="recipientPassword" 
+                             placeholder="Enter password" 
+                             style="width: 100%; padding: 15px 20px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.1em;">
+                    </div>
+                    <button id="unlockBtn" class="btn" style="margin-bottom: 20px;">
+                      🔓 Unlock Secret
+                    </button>
+                  `}
+                  
+                  <div id="recipientMessage" class="message"></div>
+                  
+                  <div id="secretContainer" style="display: none; background: #48bb78; color: white; padding: 25px; border-radius: 16px; margin-top: 20px;">
+                    <div style="font-size: 1.2em; margin-bottom: 15px;">✅ SECRET REVEALED</div>
+                    <div id="secretContent" style="background: white; color: #2d3748; padding: 20px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-word; font-size: 1.1em;">
+                    </div>
+                    <p style="margin-top: 20px; color: #f0fff4; font-size: 0.9em;">
+                      ⚠️ This link has been destroyed and cannot be used again
+                    </p>
+                  </div>
+                </div>
+                
+                <div style="color: #a0aec0; font-size: 0.9em; margin-top: 20px;">
+                  <span style="background: ${isPasswordless ? '#c6f6d5' : '#fed7d7'}; color: ${isPasswordless ? '#22543d' : '#c53030'}; padding: 5px 15px; border-radius: 50px;">
+                    ${isPasswordless ? '🔓 Passwordless' : '🔑 Password required'} • ⏳ One hour expiry • One time use
+                  </span>
+                </div>
+              </div>
+            `;
+            
+            // Setup unlock button
+            const unlockBtn = document.getElementById('unlockBtn');
+            const pwdField = document.getElementById('recipientPassword');
+            
+            function attemptUnlock(password) {
+              unlockBtn.disabled = true;
+              unlockBtn.innerHTML = '⏳ Verifying...';
+              hideMessage('recipientMessage');
+              
+              google.script.run
+                .withSuccessHandler(function(response) {
+                  unlockBtn.disabled = false;
+                  unlockBtn.innerHTML = isPasswordless ? '🔓 Reveal Secret' : '🔓 Unlock Secret';
+                  
+                  if (response && response.success) {
+                    // Show secret
+                    document.getElementById('secretContainer').style.display = 'block';
+                    document.getElementById('secretContent').textContent = response.secret;
+                    showMessage('recipientMessage', response.message, 'success');
+                    
+                    // Disable inputs
+                    if (pwdField) pwdField.disabled = true;
+                    unlockBtn.disabled = true;
+                  } else {
+                    showMessage('recipientMessage', response.message || '❌ Failed to unlock', 'error');
+                    unlockBtn.disabled = false;
+                    unlockBtn.innerHTML = isPasswordless ? '🔓 Reveal Secret' : '🔓 Unlock Secret';
+                  }
+                })
+                .withFailureHandler(function(error) {
+                  unlockBtn.disabled = false;
+                  unlockBtn.innerHTML = isPasswordless ? '🔓 Reveal Secret' : '🔓 Unlock Secret';
+                  showMessage('recipientMessage', '❌ Server error: ' + error.message, 'error');
+                })
+                .consumeLink(token, password || '');
+            }
+            
+            if (isPasswordless) {
+              // Passwordless: just click to reveal
+              unlockBtn.addEventListener('click', function() {
+                attemptUnlock('');
+              });
+            } else {
+              // Password protected: enter password then click
+              unlockBtn.addEventListener('click', function() {
+                const password = pwdField.value.trim();
+                if (!password) {
+                  showMessage('recipientMessage', '❌ Please enter a password', 'error');
+                  return;
+                }
+                attemptUnlock(password);
+              });
+              pwdField.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                  unlockBtn.click();
+                }
+              });
+            }
+          })
+          .withFailureHandler(function(error) {
+            app.innerHTML = `
+              <div style="text-align: center;">
+                <div style="font-size: 50px; margin-bottom: 20px;">❌</div>
+                <h1 style="color: #2d3748; margin-bottom: 10px; text-align: center; display: block; width: 100%;">Error</h1>
+                <p style="color: #718096; text-align: center;">Unable to load link: ${error.message}</p>
+              </div>
+            `;
+          })
+          .checkLinkExists(token);
       }
       
       // Helper: Show message
