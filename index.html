@@ -4,7 +4,7 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>🔐 Send Secure One-Time Passwords</title>
+  <title>🔐 Secure One-Time Link Generator</title>
   <style>
     * {
       margin: 0;
@@ -32,25 +32,67 @@
       border-radius: 20px;
       padding: 40px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.2);
     }
     
-    h1 {
+    /* LOADING STATE - Initially visible, hidden after view loads */
+    #loadingState {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .loader {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e2e8f0;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* GENERATOR VIEW - Hidden by default */
+    #generatorView {
+      display: none;
+    }
+    
+    /* RECIPIENT VIEW - Hidden by default */
+    #recipientView {
+      display: none;
+    }
+    
+    /* When views are active */
+    #generatorView.active {
+      display: block;
+    }
+    
+    #recipientView.active {
+      display: block;
+    }
+    
+    /* Shared title styles - Centered */
+    .page-title {
       color: #2d3748;
       font-size: 2em;
       margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      text-align: center;
+      display: block;
+      width: 100%;
     }
     
-    h1 span {
+    .page-title .badge {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       padding: 5px 15px;
       border-radius: 50px;
       font-size: 0.5em;
+      display: inline-block;
+      margin-left: 8px;
     }
     
     .subtitle {
@@ -58,6 +100,7 @@
       margin-bottom: 30px;
       padding-bottom: 20px;
       border-bottom: 2px dashed #e2e8f0;
+      text-align: center;
     }
     
     .security-badge {
@@ -173,6 +216,7 @@
       padding: 12px;
       font-size: 0.95em;
       color: #2d3748;
+      flex: 1;
     }
     
     .copy-btn {
@@ -241,6 +285,7 @@
       color: #2c5282;
       font-size: 0.9em;
       border-left: 4px solid #4299e1;
+      margin-top: 15px;
     }
     
     .checkbox-group {
@@ -306,7 +351,7 @@
       margin-top: 15px;
       font-size: 0.9em;
       color: #22543d;
-      display: flex;
+      display: none;
       align-items: center;
       gap: 10px;
     }
@@ -314,29 +359,141 @@
     .encryption-info .icon {
       font-size: 1.5em;
     }
+    
+    #secretContainer {
+      animation: fadeIn 0.5s;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Recipient view specific styles */
+    .recipient-content {
+      text-align: center;
+    }
+    
+    .recipient-content .icon-large {
+      font-size: 50px;
+      margin-bottom: 20px;
+      display: block;
+    }
+    
+    .recipient-content .title {
+      color: #2d3748;
+      font-size: 2em;
+      margin-bottom: 10px;
+      text-align: center;
+      display: block;
+      width: 100%;
+    }
+    
+    .recipient-content .description {
+      color: #718096;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .recipient-box {
+      background: #f7fafc;
+      border-radius: 20px;
+      padding: 30px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .recipient-box .label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: #4a5568;
+      text-align: center;
+    }
+    
+    .recipient-box .input-field {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1.1em;
+      text-align: left;
+    }
+    
+    .recipient-box .hint-text {
+      margin-top: 8px;
+      font-size: 0.85em;
+      color: #718096;
+      text-align: left;
+    }
+    
+    .recipient-footer {
+      color: #a0aec0;
+      font-size: 0.9em;
+      margin-top: 20px;
+      text-align: center;
+    }
+    
+    .recipient-footer .tag {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 50px;
+      margin-bottom: 10px;
+    }
+    
+    @media (max-width: 600px) {
+      .card {
+        padding: 20px;
+      }
+      
+      .page-title {
+        font-size: 1.5em;
+      }
+      
+      .recipient-content .title {
+        font-size: 1.5em;
+      }
+      
+      .link-box {
+        flex-direction: column;
+        padding: 10px;
+      }
+      
+      .copy-btn {
+        padding: 12px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card" id="app">
-      <h1>
-        🔐 Secure Send
-        <span>1h expiry</span>
-      </h1>
-      <div class="subtitle">
-        End-to-end encrypted secrets that self-destruct after 1 use
+      
+      <!-- LOADING STATE - Visible initially -->
+      <div id="loadingState">
+        <div class="loader"></div>
+        <h2 style="color: #2d3748; font-weight: 400; text-align: center;">Loading...</h2>
+        <p style="color: #718096; margin-top: 10px; text-align: center;">Please wait</p>
       </div>
       
-      <div class="security-badge">
-        <span class="icon">🔒</span>
-        <div>
-          <strong>End-to-End Encrypted</strong>
-          <div style="font-size: 0.9em; margin-top: 2px;">AES-256 encryption • Secrets encrypted before storage</div>
-        </div>
-      </div>
-      
-      <!-- GENERATOR FORM -->
+      <!-- GENERATOR VIEW -->
       <div id="generatorView">
+        <h1 class="page-title">
+          🔐 Secure Send
+          <span class="badge">1h</span>
+        </h1>
+        <div class="subtitle">
+          End-to-end encrypted secrets that self-destruct after 1 use
+        </div>
+        
+        <div class="security-badge">
+          <span class="icon">🔒</span>
+          <div>
+            <strong>End-to-End Encrypted</strong>
+            <div style="font-size: 0.9em; margin-top: 2px;">AES-256 encryption • Secrets encrypted before storage</div>
+          </div>
+        </div>
+        
         <div class="form-group">
           <label>🔑 Link Password (recipient must enter this)</label>
           <input type="text" id="linkPassword" placeholder="e.g. Temp123! or Meeting2024" value="SecurePass123">
@@ -368,73 +525,95 @@ Password: latte123</textarea>
         
         <div id="generatorMessage" class="message"></div>
         
-        <div class="encryption-info" style="display: none;" id="encryptionInfo">
-          <span class="icon">🔐</span>
-          <div>
-            <strong>Encrypted</strong>
-            <div style="font-size: 0.9em; margin-top: 2px;">Your secret is encrypted with AES-256 before being stored</div>
+        <!-- LINK DISPLAY -->
+        <div id="linkContainer" class="link-container">
+          <div class="link-label">🔗 YOUR ONE-TIME LINK (expires in 1 hour)</div>
+          <div class="link-box">
+            <input type="text" id="generatedLink" readonly value="">
+            <button class="copy-btn" id="copyBtn">📋 Copy</button>
+          </div>
+          <div class="expiry-badge">
+            ⏳ Self-destructs in 60 minutes • One use only
+          </div>
+          <div class="preview">
+            <strong>📋 Preview:</strong> 
+            <span id="previewPassword" style="background: #4299e1; color: white; padding: 2px 8px; border-radius: 50px;">SecurePass123</span>
+            <span style="color: #718096; font-size: 0.9em;"> (required to decrypt)</span>
+          </div>
+          <div class="encryption-info" id="encryptionInfo">
+            <span class="icon">🔐</span>
+            <div>
+              <strong>End-to-End Encrypted</strong>
+              <div style="font-size: 0.9em; margin-top: 2px;">Secret is encrypted with AES-256 • Only your recipient can decrypt</div>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <!-- GENERATED LINK DISPLAY -->
-      <div id="linkContainer" class="link-container">
-        <div class="link-label">🔗 YOUR ONE-TIME LINK (expires in 1 hour)</div>
-        <div class="link-box">
-          <input type="text" id="generatedLink" readonly value="">
-          <button class="copy-btn" id="copyBtn">📋 Copy</button>
+        
+        <hr>
+        
+        <div style="text-align: center; color: #4a5568;">
+          <strong>✉️ How it works:</strong><br>
+          <small>1. Set a password and your secret • 2. Secret is encrypted • 3. Generate link • 4. Share link • 5. Recipient enters password • 6. Secret is decrypted and destroyed</small>
         </div>
-        <div class="expiry-badge">
-          ⏳ Self-destructs in 60 minutes • One use only
-        </div>
-        <div class="preview" style="margin-top: 15px;">
-          <strong>📋 Preview:</strong> 
-          <span id="previewPassword" style="background: #4299e1; color: white; padding: 2px 8px; border-radius: 50px;">SecurePass123</span>
-          <span style="color: #718096; font-size: 0.9em;"> (required to decrypt)</span>
-        </div>
-        <div class="encryption-info">
-          <span class="icon">🔐</span>
-          <div>
-            <strong>End-to-End Encrypted</strong>
-            <div style="font-size: 0.9em; margin-top: 2px;">Secret is encrypted with AES-256 • Only your recipient can decrypt</div>
-          </div>
+        
+        <div class="footer">
+          🔒 AES-256 encrypted • Self-destructing • 1 hour expiry • 5 attempts max
         </div>
       </div>
       
-      <hr>
-      
-      <div style="text-align: center; color: #4a5568;">
-        <strong>✉️ How it works:</strong><br>
-        <small>1. Set a password and your secret • 2. Secret is encrypted • 3. Generate link • 4. Share link • 5. Recipient enters password • 6. Secret is decrypted and destroyed</small>
+      <!-- RECIPIENT VIEW -->
+      <div id="recipientView">
+        <!-- Content will be injected here by JavaScript -->
       </div>
       
-      <div class="footer">
-        🔒 AES-256 encrypted • Self-destructing • 1 hour expiry • 5 attempts max
-      </div>
     </div>
   </div>
 
   <script>
-    // CLIENT-SIDE JAVASCRIPT
     (function() {
       "use strict";
       
-      // Check if we're in view mode (recipient) or generator mode (sender)
-      google.script.url.getLocation(function(location) {
-        if (location.parameters.v && location.parameters.v[0] === 'view' && location.parameters.token) {
-          showRecipientView(location.parameters.token[0]);
-        } else {
-          showGeneratorView();
-        }
-      });
+      // Get DOM elements
+      const loadingState = document.getElementById('loadingState');
+      const generatorView = document.getElementById('generatorView');
+      const recipientView = document.getElementById('recipientView');
+      const app = document.getElementById('app');
       
-      // ============ SENDER VIEW ============
-      function showGeneratorView() {
-        const generatorView = document.getElementById('generatorView');
-        const linkContainer = document.getElementById('linkContainer');
-        if (generatorView) generatorView.style.display = 'block';
-        if (linkContainer) linkContainer.style.display = 'none';
+      // Function to show/hide views
+      function showView(viewId) {
+        // Hide all views
+        loadingState.style.display = 'none';
+        generatorView.style.display = 'none';
+        recipientView.style.display = 'none';
         
+        // Show the requested view
+        if (viewId === 'loading') {
+          loadingState.style.display = 'block';
+        } else if (viewId === 'generator') {
+          generatorView.style.display = 'block';
+        } else if (viewId === 'recipient') {
+          recipientView.style.display = 'block';
+        }
+      }
+      
+      // Check URL parameters immediately
+      function init() {
+        google.script.url.getLocation(function(location) {
+          // Check if we're in view mode with a token
+          if (location.parameters.v && location.parameters.v[0] === 'view' && location.parameters.token) {
+            // Show recipient view
+            showView('recipient');
+            showRecipientView(location.parameters.token[0]);
+          } else {
+            // Show generator view
+            showView('generator');
+            initGeneratorView();
+          }
+        });
+      }
+      
+      // ============ GENERATOR VIEW ============
+      function initGeneratorView() {
         // Password strength checker
         const passwordField = document.getElementById('linkPassword');
         const strengthBar = document.getElementById('strengthBar');
@@ -489,138 +668,132 @@ Password: latte123</textarea>
         const passwordlessToggle = document.getElementById('passwordlessToggle');
         const linkPasswordField = document.getElementById('linkPassword');
         
-        if (passwordlessToggle && linkPasswordField) {
-          passwordlessToggle.addEventListener('change', function() {
-            if (this.checked) {
-              linkPasswordField.disabled = true;
-              linkPasswordField.placeholder = '🔓 No password required (less secure)';
-              linkPasswordField.style.opacity = '0.6';
-              linkPasswordField.value = '';
-              document.getElementById('passwordStrength').style.display = 'none';
-            } else {
-              linkPasswordField.disabled = false;
-              linkPasswordField.placeholder = 'e.g. Temp123! or Meeting2024';
-              linkPasswordField.style.opacity = '1';
-              linkPasswordField.value = 'SecurePass123';
-              document.getElementById('passwordStrength').style.display = 'block';
-              updateStrength();
-            }
-          });
-        }
+        passwordlessToggle.addEventListener('change', function() {
+          if (this.checked) {
+            linkPasswordField.disabled = true;
+            linkPasswordField.placeholder = '🔓 No password required (less secure)';
+            linkPasswordField.style.opacity = '0.6';
+            linkPasswordField.value = '';
+            document.getElementById('passwordStrength').style.display = 'none';
+          } else {
+            linkPasswordField.disabled = false;
+            linkPasswordField.placeholder = 'e.g. Temp123! or Meeting2024';
+            linkPasswordField.style.opacity = '1';
+            linkPasswordField.value = 'SecurePass123';
+            document.getElementById('passwordStrength').style.display = 'block';
+            updateStrength();
+          }
+        });
         
         // Setup generate button
         const generateBtn = document.getElementById('generateBtn');
-        if (generateBtn) {
-          generateBtn.addEventListener('click', function() {
-            const linkPassword = document.getElementById('linkPassword').value.trim();
-            const secretMessage = document.getElementById('secretMessage').value.trim();
-            const isPasswordless = document.getElementById('passwordlessToggle').checked;
-            
-            if (!isPasswordless && !linkPassword) {
-              showMessage('generatorMessage', '❌ Please set a link password (or enable passwordless)', 'error');
-              return;
-            }
-            
-            if (!secretMessage) {
-              showMessage('generatorMessage', '❌ Please enter a secret message', 'error');
-              return;
-            }
-            
-            // Disable button
-            generateBtn.disabled = true;
-            generateBtn.innerHTML = '⏳ Encrypting...';
-            hideMessage('generatorMessage');
-            
-            // Call server with passwordless flag
-            google.script.run
-              .withSuccessHandler(function(result) {
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = '✨ Generate Encrypted Link';
+        generateBtn.addEventListener('click', function() {
+          const linkPassword = document.getElementById('linkPassword').value.trim();
+          const secretMessage = document.getElementById('secretMessage').value.trim();
+          const isPasswordless = document.getElementById('passwordlessToggle').checked;
+          
+          if (!isPasswordless && !linkPassword) {
+            showMessage('generatorMessage', '❌ Please set a link password (or enable passwordless)', 'error');
+            return;
+          }
+          
+          if (!secretMessage) {
+            showMessage('generatorMessage', '❌ Please enter a secret message', 'error');
+            return;
+          }
+          
+          // Disable button
+          generateBtn.disabled = true;
+          generateBtn.innerHTML = '⏳ Encrypting...';
+          hideMessage('generatorMessage');
+          
+          // Call server
+          google.script.run
+            .withSuccessHandler(function(result) {
+              generateBtn.disabled = false;
+              generateBtn.innerHTML = '✨ Generate Encrypted Link';
+              
+              if (result && result.link) {
+                document.getElementById('generatedLink').value = result.link;
                 
-                if (result && result.link) {
-                  // Show the link
-                  document.getElementById('generatedLink').value = result.link;
-                  
-                  // Update preview text based on passwordless mode
-                  const previewPassword = document.getElementById('previewPassword');
-                  if (isPasswordless) {
-                    previewPassword.textContent = '🔓 NO PASSWORD NEEDED';
-                    previewPassword.style.background = '#ed8936';
-                  } else {
-                    previewPassword.textContent = linkPassword;
-                    previewPassword.style.background = '#4299e1';
-                  }
-                  
-                  document.getElementById('linkContainer').style.display = 'block';
-                  document.getElementById('encryptionInfo').style.display = 'flex';
-                  showMessage('generatorMessage', '✅ Encrypted link generated! Copy and send it to your recipient.', 'success');
-                  
-                  // Scroll to link
-                  document.getElementById('linkContainer').scrollIntoView({ behavior: 'smooth' });
+                const previewPassword = document.getElementById('previewPassword');
+                if (isPasswordless) {
+                  previewPassword.textContent = '🔓 NO PASSWORD NEEDED';
+                  previewPassword.style.background = '#ed8936';
+                } else {
+                  previewPassword.textContent = linkPassword;
+                  previewPassword.style.background = '#4299e1';
                 }
-              })
-              .withFailureHandler(function(error) {
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = '✨ Generate Encrypted Link';
-                showMessage('generatorMessage', '❌ Error: ' + error.message, 'error');
-              })
-              .generateLink(linkPassword, secretMessage, isPasswordless);
-          });
-        }
+                
+                document.getElementById('linkContainer').style.display = 'block';
+                document.getElementById('encryptionInfo').style.display = 'flex';
+                showMessage('generatorMessage', '✅ Encrypted link generated! Copy and send it to your recipient.', 'success');
+                
+                document.getElementById('linkContainer').scrollIntoView({ behavior: 'smooth' });
+              }
+            })
+            .withFailureHandler(function(error) {
+              generateBtn.disabled = false;
+              generateBtn.innerHTML = '✨ Generate Encrypted Link';
+              showMessage('generatorMessage', '❌ Error: ' + error.message, 'error');
+            })
+            .generateLink(linkPassword, secretMessage, isPasswordless);
+        });
         
         // Setup copy button
-        const copyBtn = document.getElementById('copyBtn');
-        if (copyBtn) {
-          copyBtn.addEventListener('click', function() {
-            const linkInput = document.getElementById('generatedLink');
-            linkInput.select();
-            document.execCommand('copy');
-            
-            // Visual feedback
-            copyBtn.textContent = '✅ Copied!';
-            setTimeout(() => {
-              copyBtn.textContent = '📋 Copy';
-            }, 2000);
-          });
-        }
+        document.getElementById('copyBtn').addEventListener('click', function() {
+          const linkInput = document.getElementById('generatedLink');
+          linkInput.select();
+          document.execCommand('copy');
+          this.textContent = '✅ Copied!';
+          setTimeout(() => {
+            this.textContent = '📋 Copy';
+          }, 2000);
+        });
       }
       
       // ============ RECIPIENT VIEW ============
       function showRecipientView(token) {
-        const app = document.getElementById('app');
-        if (!app) return;
+        // Show loading state in recipient view
+        recipientView.innerHTML = `
+          <div class="recipient-content">
+            <div class="loader" style="margin: 40px auto 20px;"></div>
+            <h2 class="title" style="font-weight: 400;">Checking link...</h2>
+            <p class="description">Verifying security credentials</p>
+          </div>
+        `;
         
-        // First, check if the link exists and if it's passwordless
+        // Check if link exists
         google.script.run
           .withSuccessHandler(function(response) {
-            // If link doesn't exist or is expired
             if (!response || !response.exists) {
-              app.innerHTML = `
-                <div style="text-align: center;">
-                  <div style="font-size: 50px; margin-bottom: 20px;">❌</div>
-                  <h1 style="color: #2d3748; margin-bottom: 10px; text-align: center; display: block; width: 100%;">Link Not Found</h1>
-                  <p style="color: #718096; text-align: center;">This link may have expired, been used, or been revoked.</p>
-                  <div style="margin-top: 20px; background: #fed7d7; padding: 15px; border-radius: 12px; color: #742a2a; font-size: 0.9em;">
+              recipientView.innerHTML = `
+                <div class="recipient-content">
+                  <span class="icon-large">❌</span>
+                  <h1 class="title">Link Not Found</h1>
+                  <p class="description">This link may have expired or already been used.</p>
+                  <div style="margin-top: 20px; background: #fed7d7; padding: 15px; border-radius: 12px; color: #742a2a; font-size: 0.9em; text-align: center;">
                     ⚠️ Links are destroyed after 1 hour, 1 use, or 5 failed attempts
                   </div>
+                  <button onclick="location.reload()" style="margin-top: 20px; padding: 12px 30px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    🔄 Try Again
+                  </button>
                 </div>
               `;
               return;
             }
             
-            // Check if it's passwordless
             const isPasswordless = response.passwordless || false;
             
-            // Clear and show password prompt (or direct access for passwordless)
-            app.innerHTML = `
-              <div style="text-align: center;">
-                <div style="font-size: 50px; margin-bottom: 20px;">🔐</div>
-                <h1 style="color: #2d3748; margin-bottom: 10px; text-align: center; display: block; width: 100%;">Secure One-Time Link</h1>
-                <p style="color: #718096; margin-bottom: 30px; text-align: center;">This link will self-destruct after viewing</p>
+            recipientView.innerHTML = `
+              <div class="recipient-content">
+                <span class="icon-large">🔐</span>
+                <h1 class="title">Secure One-Time Link</h1>
+                <p class="description">This link will self-destruct after viewing</p>
                 
-                <div style="background: #f7fafc; border-radius: 20px; padding: 30px; margin: 20px 0;">
+                <div class="recipient-box">
                   ${isPasswordless ? `
-                    <div style="margin-bottom: 25px; color: #ed8936; font-size: 1.2em; font-weight: 600;">
+                    <div style="margin-bottom: 25px; color: #ed8936; font-size: 1.2em; font-weight: 600; text-align: center;">
                       🔓 This link is passwordless - click below to decrypt the secret
                     </div>
                     <button id="unlockBtn" class="btn" style="margin-bottom: 20px; background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);">
@@ -628,13 +801,13 @@ Password: latte123</textarea>
                     </button>
                   ` : `
                     <div style="margin-bottom: 25px;">
-                      <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #4a5568;">
+                      <label class="label" style="text-align: center;">
                         🔑 Enter the password to decrypt the secret
                       </label>
                       <input type="password" id="recipientPassword" 
                              placeholder="Enter password" 
-                             style="width: 100%; padding: 15px 20px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.1em;">
-                      <div style="margin-top: 8px; font-size: 0.85em; color: #718096;">
+                             class="input-field">
+                      <div class="hint-text" style="text-align: center;">
                         ⚠️ 5 incorrect attempts will destroy this link
                       </div>
                     </div>
@@ -645,37 +818,27 @@ Password: latte123</textarea>
                   
                   <div id="recipientMessage" class="message"></div>
                   
-                  <div id="secretContainer" style="display: none; background: #48bb78; color: white; padding: 25px; border-radius: 16px; margin-top: 20px; animation: fadeIn 0.5s;">
+                  <div id="secretContainer" style="display: none; background: #48bb78; color: white; padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center;">
                     <div style="font-size: 1.2em; margin-bottom: 15px;">✅ SECRET DECRYPTED</div>
                     <div id="secretContent" style="background: white; color: #2d3748; padding: 20px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-word; font-size: 1.1em; text-align: left;">
                     </div>
-                    <p style="margin-top: 20px; color: #f0fff4; font-size: 0.9em;">
+                    <p style="margin-top: 20px; color: #f0fff4; font-size: 0.9em; text-align: center;">
                       ⚠️ This link has been destroyed and cannot be used again
                     </p>
                   </div>
                 </div>
                 
-                <div style="color: #a0aec0; font-size: 0.9em; margin-top: 20px;">
-                  <span style="background: ${isPasswordless ? '#fefcbf' : '#fed7d7'}; color: ${isPasswordless ? '#744210' : '#c53030'}; padding: 5px 15px; border-radius: 50px; display: inline-block; margin-bottom: 10px;">
+                <div class="recipient-footer">
+                  <span class="tag" style="background: ${isPasswordless ? '#fefcbf' : '#fed7d7'}; color: ${isPasswordless ? '#744210' : '#c53030'};">
                     ${isPasswordless ? '🔓 Passwordless (less secure)' : '🔑 Password required'} • ⏳ One hour expiry • One time use
                   </span>
                   <br>
-                  <span style="font-size: 0.85em; color: #a0aec0;">
+                  <span style="font-size: 0.85em; color: #a0aec0; display: block; margin-top: 8px;">
                     🔒 AES-256 encrypted • Link destroyed after viewing
                   </span>
                 </div>
               </div>
             `;
-            
-            // Add animation style
-            const style = document.createElement('style');
-            style.textContent = `
-              @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(-10px); }
-                to { opacity: 1; transform: translateY(0); }
-              }
-            `;
-            document.head.appendChild(style);
             
             // Setup unlock button
             const unlockBtn = document.getElementById('unlockBtn');
@@ -692,12 +855,9 @@ Password: latte123</textarea>
                   unlockBtn.innerHTML = isPasswordless ? '🔓 Decrypt & Reveal' : '🔓 Decrypt Secret';
                   
                   if (response && response.success) {
-                    // Show secret
                     document.getElementById('secretContainer').style.display = 'block';
                     document.getElementById('secretContent').textContent = response.secret;
                     showMessage('recipientMessage', response.message, 'success');
-                    
-                    // Disable inputs
                     if (pwdField) pwdField.disabled = true;
                     unlockBtn.disabled = true;
                   } else {
@@ -715,12 +875,10 @@ Password: latte123</textarea>
             }
             
             if (isPasswordless) {
-              // Passwordless: just click to reveal
               unlockBtn.addEventListener('click', function() {
                 attemptUnlock('');
               });
             } else {
-              // Password protected: enter password then click
               unlockBtn.addEventListener('click', function() {
                 const password = pwdField.value.trim();
                 if (!password) {
@@ -737,18 +895,21 @@ Password: latte123</textarea>
             }
           })
           .withFailureHandler(function(error) {
-            app.innerHTML = `
-              <div style="text-align: center;">
-                <div style="font-size: 50px; margin-bottom: 20px;">❌</div>
-                <h1 style="color: #2d3748; margin-bottom: 10px; text-align: center; display: block; width: 100%;">Error</h1>
-                <p style="color: #718096; text-align: center;">Unable to load link: ${error.message}</p>
+            recipientView.innerHTML = `
+              <div class="recipient-content">
+                <span class="icon-large">❌</span>
+                <h1 class="title">Error</h1>
+                <p class="description">Unable to load link: ${error.message}</p>
+                <button onclick="location.reload()" style="margin-top: 20px; padding: 12px 30px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                  🔄 Try Again
+                </button>
               </div>
             `;
           })
           .checkLinkExists(token);
       }
       
-      // Helper: Show message
+      // Helper functions
       function showMessage(elementId, text, type) {
         const el = document.getElementById(elementId);
         if (el) {
@@ -758,13 +919,16 @@ Password: latte123</textarea>
         }
       }
       
-      // Helper: Hide message
       function hideMessage(elementId) {
         const el = document.getElementById(elementId);
         if (el) {
           el.style.display = 'none';
         }
       }
+      
+      // Start the app
+      init();
+      
     })();
   </script>
 </body>
