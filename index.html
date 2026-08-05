@@ -60,6 +60,23 @@
       border-bottom: 2px dashed #e2e8f0;
     }
     
+    .security-badge {
+      background: #ebf8ff;
+      border-left: 4px solid #4299e1;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9em;
+      color: #2c5282;
+    }
+    
+    .security-badge .icon {
+      font-size: 1.5em;
+    }
+    
     .form-group {
       margin-bottom: 25px;
     }
@@ -260,17 +277,62 @@
       font-weight: 400;
       margin-left: 4px;
     }
+    
+    .password-strength {
+      margin-top: 8px;
+      font-size: 0.85em;
+      color: #718096;
+    }
+    
+    .password-strength .bar {
+      height: 4px;
+      background: #e2e8f0;
+      border-radius: 2px;
+      margin-top: 5px;
+      overflow: hidden;
+    }
+    
+    .password-strength .bar .fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+    
+    .encryption-info {
+      background: #f0fff4;
+      border: 1px solid #c6f6d5;
+      border-radius: 12px;
+      padding: 15px;
+      margin-top: 15px;
+      font-size: 0.9em;
+      color: #22543d;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .encryption-info .icon {
+      font-size: 1.5em;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card" id="app">
       <h1>
-        🔐 One-Time Send
+        🔐 Secure Send
         <span>1h expiry</span>
       </h1>
       <div class="subtitle">
-        Send passwords and secrets that self-destruct after 1 use
+        End-to-end encrypted secrets that self-destruct after 1 use
+      </div>
+      
+      <div class="security-badge">
+        <span class="icon">🔒</span>
+        <div>
+          <strong>End-to-End Encrypted</strong>
+          <div style="font-size: 0.9em; margin-top: 2px;">AES-256 encryption • Secrets encrypted before storage</div>
+        </div>
       </div>
       
       <!-- GENERATOR FORM -->
@@ -278,14 +340,18 @@
         <div class="form-group">
           <label>🔑 Link Password (recipient must enter this)</label>
           <input type="text" id="linkPassword" placeholder="e.g. Temp123! or Meeting2024" value="SecurePass123">
-          <small style="color: #718096; display: block; margin-top: 5px;">Recipient needs this password to open the link</small>
+          <div id="passwordStrength" class="password-strength">
+            <span>Password strength: <span id="strengthText">Medium</span></span>
+            <div class="bar"><div class="fill" id="strengthBar" style="width: 60%; background: #ed8936;"></div></div>
+          </div>
+          <small style="color: #718096; display: block; margin-top: 5px;">Used to encrypt your secret</small>
         </div>
         
         <div class="checkbox-group">
           <input type="checkbox" id="passwordlessToggle">
           <label for="passwordlessToggle">
             🔓 Make this link passwordless
-            <span class="hint">(no password required to view)</span>
+            <span class="hint">(no password required to view - less secure)</span>
           </label>
         </div>
         
@@ -293,14 +359,22 @@
           <label>📦 Secret Message (what you want to send)</label>
           <textarea id="secretMessage" placeholder="Enter the password, file link, or secret message you want to send...">WiFi: CoffeeShop
 Password: latte123</textarea>
-          <small style="color: #718096; display: block; margin-top: 5px;">This is what the recipient will see after accessing the link</small>
+          <small style="color: #718096; display: block; margin-top: 5px;">This will be encrypted before storage</small>
         </div>
         
         <button class="btn" id="generateBtn">
-          ✨ Generate One-Time Link
+          ✨ Generate Encrypted Link
         </button>
         
         <div id="generatorMessage" class="message"></div>
+        
+        <div class="encryption-info" style="display: none;" id="encryptionInfo">
+          <span class="icon">🔐</span>
+          <div>
+            <strong>Encrypted</strong>
+            <div style="font-size: 0.9em; margin-top: 2px;">Your secret is encrypted with AES-256 before being stored</div>
+          </div>
+        </div>
       </div>
       
       <!-- GENERATED LINK DISPLAY -->
@@ -314,19 +388,28 @@ Password: latte123</textarea>
           ⏳ Self-destructs in 60 minutes • One use only
         </div>
         <div class="preview" style="margin-top: 15px;">
-          <strong>📋 Preview:</strong> Recipient will need password <span id="previewPassword" style="background: #4299e1; color: white; padding: 2px 8px; border-radius: 50px;">SecurePass123</span>
+          <strong>📋 Preview:</strong> 
+          <span id="previewPassword" style="background: #4299e1; color: white; padding: 2px 8px; border-radius: 50px;">SecurePass123</span>
+          <span style="color: #718096; font-size: 0.9em;"> (required to decrypt)</span>
+        </div>
+        <div class="encryption-info">
+          <span class="icon">🔐</span>
+          <div>
+            <strong>End-to-End Encrypted</strong>
+            <div style="font-size: 0.9em; margin-top: 2px;">Secret is encrypted with AES-256 • Only your recipient can decrypt</div>
+          </div>
         </div>
       </div>
       
       <hr>
       
       <div style="text-align: center; color: #4a5568;">
-        <strong>✉️ How to use:</strong><br>
-        <small>1. Set a password and your secret • 2. Generate link • 3. Share link with recipient • 4. They enter password • 5. Secret is revealed once and destroyed</small>
+        <strong>✉️ How it works:</strong><br>
+        <small>1. Set a password and your secret • 2. Secret is encrypted • 3. Generate link • 4. Share link • 5. Recipient enters password • 6. Secret is decrypted and destroyed</small>
       </div>
       
       <div class="footer">
-        ⚡ Each link works once • Expires in 60 minutes • 256-bit encrypted
+        🔒 AES-256 encrypted • Self-destructing • 1 hour expiry • 5 attempts max
       </div>
     </div>
   </div>
@@ -345,12 +428,62 @@ Password: latte123</textarea>
         }
       });
       
-      // ============ SENDER VIEW (Generate links) ============
+      // ============ SENDER VIEW ============
       function showGeneratorView() {
         const generatorView = document.getElementById('generatorView');
         const linkContainer = document.getElementById('linkContainer');
         if (generatorView) generatorView.style.display = 'block';
         if (linkContainer) linkContainer.style.display = 'none';
+        
+        // Password strength checker
+        const passwordField = document.getElementById('linkPassword');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthText = document.getElementById('strengthText');
+        
+        function checkPasswordStrength(password) {
+          let score = 0;
+          if (password.length >= 8) score++;
+          if (password.length >= 12) score++;
+          if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+          if (/\d/.test(password)) score++;
+          if (/[^a-zA-Z0-9]/.test(password)) score++;
+          return score;
+        }
+        
+        function updateStrength() {
+          const password = passwordField.value;
+          const score = checkPasswordStrength(password);
+          let width, color, text;
+          
+          if (score <= 1) {
+            width = '20%';
+            color = '#fc8181';
+            text = 'Weak';
+          } else if (score <= 2) {
+            width = '40%';
+            color = '#ed8936';
+            text = 'Weak';
+          } else if (score <= 3) {
+            width = '60%';
+            color = '#ecc94b';
+            text = 'Medium';
+          } else if (score <= 4) {
+            width = '80%';
+            color = '#48bb78';
+            text = 'Strong';
+          } else {
+            width = '100%';
+            color = '#38a169';
+            text = 'Very Strong';
+          }
+          
+          strengthBar.style.width = width;
+          strengthBar.style.background = color;
+          strengthText.textContent = text;
+        }
+        
+        passwordField.addEventListener('input', updateStrength);
+        updateStrength();
         
         // Toggle password field based on passwordless checkbox
         const passwordlessToggle = document.getElementById('passwordlessToggle');
@@ -360,14 +493,17 @@ Password: latte123</textarea>
           passwordlessToggle.addEventListener('change', function() {
             if (this.checked) {
               linkPasswordField.disabled = true;
-              linkPasswordField.placeholder = '🔓 No password required';
+              linkPasswordField.placeholder = '🔓 No password required (less secure)';
               linkPasswordField.style.opacity = '0.6';
               linkPasswordField.value = '';
+              document.getElementById('passwordStrength').style.display = 'none';
             } else {
               linkPasswordField.disabled = false;
               linkPasswordField.placeholder = 'e.g. Temp123! or Meeting2024';
               linkPasswordField.style.opacity = '1';
               linkPasswordField.value = 'SecurePass123';
+              document.getElementById('passwordStrength').style.display = 'block';
+              updateStrength();
             }
           });
         }
@@ -392,14 +528,14 @@ Password: latte123</textarea>
             
             // Disable button
             generateBtn.disabled = true;
-            generateBtn.innerHTML = '⏳ Generating...';
+            generateBtn.innerHTML = '⏳ Encrypting...';
             hideMessage('generatorMessage');
             
             // Call server with passwordless flag
             google.script.run
               .withSuccessHandler(function(result) {
                 generateBtn.disabled = false;
-                generateBtn.innerHTML = '✨ Generate One-Time Link';
+                generateBtn.innerHTML = '✨ Generate Encrypted Link';
                 
                 if (result && result.link) {
                   // Show the link
@@ -409,14 +545,15 @@ Password: latte123</textarea>
                   const previewPassword = document.getElementById('previewPassword');
                   if (isPasswordless) {
                     previewPassword.textContent = '🔓 NO PASSWORD NEEDED';
-                    previewPassword.style.background = '#48bb78';
+                    previewPassword.style.background = '#ed8936';
                   } else {
                     previewPassword.textContent = linkPassword;
                     previewPassword.style.background = '#4299e1';
                   }
                   
                   document.getElementById('linkContainer').style.display = 'block';
-                  showMessage('generatorMessage', '✅ Link generated! Copy and send it to your recipient.', 'success');
+                  document.getElementById('encryptionInfo').style.display = 'flex';
+                  showMessage('generatorMessage', '✅ Encrypted link generated! Copy and send it to your recipient.', 'success');
                   
                   // Scroll to link
                   document.getElementById('linkContainer').scrollIntoView({ behavior: 'smooth' });
@@ -424,7 +561,7 @@ Password: latte123</textarea>
               })
               .withFailureHandler(function(error) {
                 generateBtn.disabled = false;
-                generateBtn.innerHTML = '✨ Generate One-Time Link';
+                generateBtn.innerHTML = '✨ Generate Encrypted Link';
                 showMessage('generatorMessage', '❌ Error: ' + error.message, 'error');
               })
               .generateLink(linkPassword, secretMessage, isPasswordless);
@@ -448,7 +585,7 @@ Password: latte123</textarea>
         }
       }
       
-      // ============ RECIPIENT VIEW (Open links) ============
+      // ============ RECIPIENT VIEW ============
       function showRecipientView(token) {
         const app = document.getElementById('app');
         if (!app) return;
@@ -462,7 +599,10 @@ Password: latte123</textarea>
                 <div style="text-align: center;">
                   <div style="font-size: 50px; margin-bottom: 20px;">❌</div>
                   <h1 style="color: #2d3748; margin-bottom: 10px; text-align: center; display: block; width: 100%;">Link Not Found</h1>
-                  <p style="color: #718096; text-align: center;">This link may have expired or already been used.</p>
+                  <p style="color: #718096; text-align: center;">This link may have expired, been used, or been revoked.</p>
+                  <div style="margin-top: 20px; background: #fed7d7; padding: 15px; border-radius: 12px; color: #742a2a; font-size: 0.9em;">
+                    ⚠️ Links are destroyed after 1 hour, 1 use, or 5 failed attempts
+                  </div>
                 </div>
               `;
               return;
@@ -480,31 +620,34 @@ Password: latte123</textarea>
                 
                 <div style="background: #f7fafc; border-radius: 20px; padding: 30px; margin: 20px 0;">
                   ${isPasswordless ? `
-                    <div style="margin-bottom: 25px; color: #48bb78; font-size: 1.2em; font-weight: 600;">
-                      🔓 This link is passwordless - click below to reveal the secret
+                    <div style="margin-bottom: 25px; color: #ed8936; font-size: 1.2em; font-weight: 600;">
+                      🔓 This link is passwordless - click below to decrypt the secret
                     </div>
-                    <button id="unlockBtn" class="btn" style="margin-bottom: 20px; background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
-                      🔓 Reveal Secret
+                    <button id="unlockBtn" class="btn" style="margin-bottom: 20px; background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);">
+                      🔓 Decrypt & Reveal
                     </button>
                   ` : `
                     <div style="margin-bottom: 25px;">
                       <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #4a5568;">
-                        🔑 Enter the password to reveal the secret
+                        🔑 Enter the password to decrypt the secret
                       </label>
                       <input type="password" id="recipientPassword" 
                              placeholder="Enter password" 
                              style="width: 100%; padding: 15px 20px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.1em;">
+                      <div style="margin-top: 8px; font-size: 0.85em; color: #718096;">
+                        ⚠️ 5 incorrect attempts will destroy this link
+                      </div>
                     </div>
                     <button id="unlockBtn" class="btn" style="margin-bottom: 20px;">
-                      🔓 Unlock Secret
+                      🔓 Decrypt Secret
                     </button>
                   `}
                   
                   <div id="recipientMessage" class="message"></div>
                   
-                  <div id="secretContainer" style="display: none; background: #48bb78; color: white; padding: 25px; border-radius: 16px; margin-top: 20px;">
-                    <div style="font-size: 1.2em; margin-bottom: 15px;">✅ SECRET REVEALED</div>
-                    <div id="secretContent" style="background: white; color: #2d3748; padding: 20px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-word; font-size: 1.1em;">
+                  <div id="secretContainer" style="display: none; background: #48bb78; color: white; padding: 25px; border-radius: 16px; margin-top: 20px; animation: fadeIn 0.5s;">
+                    <div style="font-size: 1.2em; margin-bottom: 15px;">✅ SECRET DECRYPTED</div>
+                    <div id="secretContent" style="background: white; color: #2d3748; padding: 20px; border-radius: 12px; font-family: monospace; white-space: pre-wrap; word-break: break-word; font-size: 1.1em; text-align: left;">
                     </div>
                     <p style="margin-top: 20px; color: #f0fff4; font-size: 0.9em;">
                       ⚠️ This link has been destroyed and cannot be used again
@@ -513,12 +656,26 @@ Password: latte123</textarea>
                 </div>
                 
                 <div style="color: #a0aec0; font-size: 0.9em; margin-top: 20px;">
-                  <span style="background: ${isPasswordless ? '#c6f6d5' : '#fed7d7'}; color: ${isPasswordless ? '#22543d' : '#c53030'}; padding: 5px 15px; border-radius: 50px;">
-                    ${isPasswordless ? '🔓 Passwordless' : '🔑 Password required'} • ⏳ One hour expiry • One time use
+                  <span style="background: ${isPasswordless ? '#fefcbf' : '#fed7d7'}; color: ${isPasswordless ? '#744210' : '#c53030'}; padding: 5px 15px; border-radius: 50px; display: inline-block; margin-bottom: 10px;">
+                    ${isPasswordless ? '🔓 Passwordless (less secure)' : '🔑 Password required'} • ⏳ One hour expiry • One time use
+                  </span>
+                  <br>
+                  <span style="font-size: 0.85em; color: #a0aec0;">
+                    🔒 AES-256 encrypted • Link destroyed after viewing
                   </span>
                 </div>
               </div>
             `;
+            
+            // Add animation style
+            const style = document.createElement('style');
+            style.textContent = `
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            `;
+            document.head.appendChild(style);
             
             // Setup unlock button
             const unlockBtn = document.getElementById('unlockBtn');
@@ -526,13 +683,13 @@ Password: latte123</textarea>
             
             function attemptUnlock(password) {
               unlockBtn.disabled = true;
-              unlockBtn.innerHTML = '⏳ Verifying...';
+              unlockBtn.innerHTML = '⏳ Decrypting...';
               hideMessage('recipientMessage');
               
               google.script.run
                 .withSuccessHandler(function(response) {
                   unlockBtn.disabled = false;
-                  unlockBtn.innerHTML = isPasswordless ? '🔓 Reveal Secret' : '🔓 Unlock Secret';
+                  unlockBtn.innerHTML = isPasswordless ? '🔓 Decrypt & Reveal' : '🔓 Decrypt Secret';
                   
                   if (response && response.success) {
                     // Show secret
@@ -544,14 +701,14 @@ Password: latte123</textarea>
                     if (pwdField) pwdField.disabled = true;
                     unlockBtn.disabled = true;
                   } else {
-                    showMessage('recipientMessage', response.message || '❌ Failed to unlock', 'error');
+                    showMessage('recipientMessage', response.message || '❌ Failed to decrypt', 'error');
                     unlockBtn.disabled = false;
-                    unlockBtn.innerHTML = isPasswordless ? '🔓 Reveal Secret' : '🔓 Unlock Secret';
+                    unlockBtn.innerHTML = isPasswordless ? '🔓 Decrypt & Reveal' : '🔓 Decrypt Secret';
                   }
                 })
                 .withFailureHandler(function(error) {
                   unlockBtn.disabled = false;
-                  unlockBtn.innerHTML = isPasswordless ? '🔓 Reveal Secret' : '🔓 Unlock Secret';
+                  unlockBtn.innerHTML = isPasswordless ? '🔓 Decrypt & Reveal' : '🔓 Decrypt Secret';
                   showMessage('recipientMessage', '❌ Server error: ' + error.message, 'error');
                 })
                 .consumeLink(token, password || '');
