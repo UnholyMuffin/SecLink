@@ -1,395 +1,242 @@
 // ================================================
-// SECURE ONE-TIME LINK GENERATOR - v1.5
-// Google Apps Script
+// SECURE ONE-TIME LINK GENERATOR - v2.0 (E2EE)
+// Google Apps Script - End-to-End Encrypted
 // ================================================
 
 function doGet(e) {
+  // Enforce secure framing (default mode denies embedding in unauthorized frames)
   return HtmlService.createHtmlOutputFromFile('index')
     .setTitle('🔐 One-Time Link')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
 // ================================================
-// ENCRYPTION
-// ================================================
-
-function encryptSecret(text, password) {
-  if (!text || !password) {
-    throw new Error('Text and password required');
-  }
-  
-  const salt = Utilities.getUuid().replace(/-/g, '').substring(0, 16);
-  const iv = Utilities.getUuid().replace(/-/g, '').substring(0, 16);
-  
-  const keyMaterial = Utilities.computeDigest(
-    Utilities.DigestAlgorithm.SHA_256,
-    password + salt + iv
-  ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
-  
-  const key = keyMaterial.substring(0, 32);
-  const combinedKey = key + iv;
-  
-  const textBytes = Utilities.newBlob(text).getBytes();
-  const keyBytes = Utilities.newBlob(combinedKey).getBytes();
-  
-  const encryptedBytes = [];
-  for (let i = 0; i < textBytes.length; i++) {
-    const keyByte = keyBytes[i % keyBytes.length];
-    encryptedBytes.push(textBytes[i] ^ keyByte);
-  }
-  
-  const encryptedBase64 = Utilities.base64Encode(encryptedBytes);
-  
-  const hmac = Utilities.computeDigest(
-    Utilities.DigestAlgorithm.SHA_256,
-    encryptedBase64 + password + salt
-  ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
-  
-  return {
-    encrypted: encryptedBase64,
-    iv: iv,
-    salt: salt,
-    hmac: hmac.substring(0, 32)
-  };
-}
-
-function decryptSecret(encryptedBase64, password, iv, salt, hmac) {
-  if (!encryptedBase64 || !password || !iv || !salt) {
-    throw new Error('Missing required parameters');
-  }
-  
-  try {
-    const hmacCheck = Utilities.computeDigest(
-      Utilities.DigestAlgorithm.SHA_256,
-      encryptedBase64 + password + salt
-    ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
-    
-    if (hmac && hmac !== hmacCheck.substring(0, 32)) {
-      throw new Error('Integrity check failed');
-    }
-    
-    const keyMaterial = Utilities.computeDigest(
-      Utilities.DigestAlgorithm.SHA_256,
-      password + salt + iv
-    ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
-    
-    const key = keyMaterial.substring(0, 32);
-    const combinedKey = key + iv;
-    
-    const encryptedBytes = Utilities.base64Decode(encryptedBase64);
-    const keyBytes = Utilities.newBlob(combinedKey).getBytes();
-    
-    const decryptedBytes = [];
-    for (let i = 0; i < encryptedBytes.length; i++) {
-      const keyByte = keyBytes[i % keyBytes.length];
-      decryptedBytes.push(encryptedBytes[i] ^ keyByte);
-    }
-    
-    return Utilities.newBlob(decryptedBytes).getDataAsString();
-  } catch (e) {
-    throw new Error('Decryption failed');
-  }
-}
-
-// ================================================
-// RATE LIMITING - 5 links per minute
+// RATE LIMITING & LOCKING
 // ================================================
 
 function checkRateLimit() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    return { allowed: false, message: '❌ System busy, please try again.' };
+  }
+
   try {
-    const userEmail = Session.getActiveUser().getEmail();
+    // Session.getTemporaryActiveUserKey() handles unauthenticated/anonymous users safely
+    const userKey = Session.getTemporaryActiveUserKey() || 'anon_user';
     const props = PropertiesService.getScriptProperties();
-    const key = 'rate_limit_' + userEmail;
+    const key = 'rl_' + userKey;
     const now = Date.now();
-    const windowMs = 60000; // 1 minute
+    const windowMs = 60000; // 1 minute window
     const maxLinks = 5;
-    
+
     const storedData = props.getProperty(key);
     let data = { count: 0, timestamp: now, requests: [] };
-    
+
     if (storedData) {
       try {
         data = JSON.parse(storedData);
         if (now - data.timestamp > windowMs) {
           data = { count: 0, timestamp: now, requests: [] };
         }
-      } catch(e) {
+      } catch (e) {
         data = { count: 0, timestamp: now, requests: [] };
       }
     }
-    
-    if (data.count >= maxLinks) {
+
+    data.requests = data.requests.filter(time => now - time < windowMs);
+
+    if (data.requests.length >= maxLinks) {
       const oldestRequest = data.requests[0] || data.timestamp;
       const waitTime = Math.ceil((oldestRequest + windowMs - now) / 1000);
-      return { 
-        allowed: false, 
-        message: '❌ Please wait ' + waitTime + ' seconds' 
+      return {
+        allowed: false,
+        message: '❌ Limit exceeded. Please wait ' + Math.max(1, waitTime) + ' seconds.'
       };
     }
-    
-    data.count++;
+
+    data.count = data.requests.length + 1;
     data.timestamp = now;
     data.requests.push(now);
-    data.requests = data.requests.filter(time => now - time < windowMs);
-    
+
     props.setProperty(key, JSON.stringify(data));
-    
-    return { 
-      allowed: true, 
+
+    return {
+      allowed: true,
       remaining: maxLinks - data.count,
       limit: maxLinks
     };
   } catch (e) {
-    console.log('Rate limit check failed: ' + e.message);
-    return { allowed: true };
+    console.error('Rate limit error: ' + e.message);
+    return { allowed: true, remaining: 5, limit: 5 };
+  } finally {
+    lock.releaseLock();
   }
 }
 
 function getRateLimitStatus() {
   try {
-    const userEmail = Session.getActiveUser().getEmail();
+    const userKey = Session.getTemporaryActiveUserKey() || 'anon_user';
     const props = PropertiesService.getScriptProperties();
-    const key = 'rate_limit_' + userEmail;
-    const now = Date.now();
-    const windowMs = 60000;
+    const storedData = props.getProperty('rl_' + userKey);
     const maxLinks = 5;
-    
-    const storedData = props.getProperty(key);
-    if (!storedData) {
-      return { remaining: maxLinks, limit: maxLinks };
-    }
-    
-    try {
-      const data = JSON.parse(storedData);
-      if (now - data.timestamp > windowMs) {
-        return { remaining: maxLinks, limit: maxLinks };
-      }
-      return { 
-        remaining: Math.max(0, maxLinks - data.count), 
-        limit: maxLinks 
-      };
-    } catch(e) {
-      return { remaining: maxLinks, limit: maxLinks };
-    }
-  } catch(e) {
+
+    if (!storedData) return { remaining: maxLinks, limit: maxLinks };
+
+    const data = JSON.parse(storedData);
+    const now = Date.now();
+    const activeRequests = (data.requests || []).filter(time => now - time < 60000);
+
+    return {
+      remaining: Math.max(0, maxLinks - activeRequests.length),
+      limit: maxLinks
+    };
+  } catch (e) {
     return { remaining: 5, limit: 5 };
   }
 }
 
 // ================================================
-// CORE FUNCTIONS
+// STORAGE & PAYLOAD HANDLING
 // ================================================
 
-function generateLink(linkPassword, secretMessage, isPasswordless) {
+function saveSecretPayload(encryptedData) {
   const rateLimit = checkRateLimit();
   if (!rateLimit.allowed) {
     throw new Error(rateLimit.message);
   }
-  
-  if (!secretMessage || secretMessage.trim() === '') {
-    throw new Error('Secret message cannot be empty');
+
+  if (!encryptedData || !encryptedData.ciphertext || !encryptedData.iv) {
+    throw new Error('Invalid secret payload');
   }
-  
+
   const token = Utilities.getUuid();
-  const now = new Date().getTime();
-  const expiry = now + 60 * 60 * 1000;
-  
-  let data = {
-    expiry: expiry,
-    used: false,
-    passwordless: isPasswordless || false,
-    attempts: 0
+  const now = Date.now();
+  const expiry = now + (60 * 60 * 1000); // 1 hour TTL
+
+  const record = {
+    ciphertext: encryptedData.ciphertext,
+    iv: encryptedData.iv,
+    salt: encryptedData.salt || null,
+    passwordless: !!encryptedData.passwordless,
+    expiry: expiry
   };
-  
-  try {
-    if (isPasswordless || !linkPassword || linkPassword.trim() === '') {
-      const randomKey = Utilities.getUuid().replace(/-/g, '').substring(0, 32);
-      const encryptionResult = encryptSecret(secretMessage, randomKey);
-      
-      data.encryptedSecret = encryptionResult.encrypted;
-      data.iv = encryptionResult.iv;
-      data.salt = encryptionResult.salt;
-      data.hmac = encryptionResult.hmac;
-      data.randomKey = randomKey;
-      data.hash = null;
-    } else {
-      const passwordHash = Utilities.computeDigest(
-        Utilities.DigestAlgorithm.SHA_256, 
-        linkPassword
-      ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
-      
-      const encryptionResult = encryptSecret(secretMessage, linkPassword);
-      
-      data.encryptedSecret = encryptionResult.encrypted;
-      data.iv = encryptionResult.iv;
-      data.salt = encryptionResult.salt;
-      data.hmac = encryptionResult.hmac;
-      data.hash = passwordHash;
-      data.randomKey = null;
-    }
-  } catch (e) {
-    throw new Error('Failed to encrypt: ' + e.message);
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    throw new Error('Server busy, storage lock timeout');
   }
-  
+
   try {
-    PropertiesService.getScriptProperties().setProperty('ot_' + token, JSON.stringify(data));
+    PropertiesService.getScriptProperties().setProperty('ot_' + token, JSON.stringify(record));
   } catch (e) {
-    throw new Error('Failed to save link');
+    throw new Error('Storage limit exceeded or failed to save secret');
+  } finally {
+    lock.releaseLock();
   }
-  
-  const url = ScriptApp.getService().getUrl() + '?v=view&token=' + encodeURIComponent(token);
-  
-  return { 
-    link: url, 
-    token: token, 
+
+  const baseUrl = ScriptApp.getService().getUrl();
+  const url = baseUrl + '?v=view&token=' + encodeURIComponent(token);
+
+  return {
+    url: url,
+    token: token,
     expiry: expiry,
-    rateLimit: {
-      remaining: rateLimit.remaining || 5,
-      limit: 5
-    }
+    rateLimit: rateLimit
   };
 }
 
-function consumeLink(token, enteredPassword) {
+function fetchSecretPayload(token) {
+  if (!token) return { success: false, message: '❌ Invalid token' };
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    return { success: false, message: '❌ Server busy' };
+  }
+
   const props = PropertiesService.getScriptProperties();
   const key = 'ot_' + token;
-  const storedJson = props.getProperty(key);
-  
-  if (!storedJson) {
-    return { success: false, message: '❌ Not found' };
-  }
-  
-  let record;
-  try { 
-    record = JSON.parse(storedJson); 
-  } catch (e) { 
-    props.deleteProperty(key);
-    return { success: false, message: '❌ Invalid' }; 
-  }
-  
-  if (record.used === true) { 
-    props.deleteProperty(key); 
-    return { success: false, message: '❌ Already used' }; 
-  }
-  
-  const now = new Date().getTime();
-  if (now > record.expiry) { 
-    props.deleteProperty(key); 
-    return { success: false, message: '❌ Expired' }; 
-  }
-  
-  let secret = null;
-  
+
   try {
-    if (record.passwordless === true) {
-      if (!record.randomKey) {
-        props.deleteProperty(key);
-        return { success: false, message: '❌ Invalid' };
-      }
-      
-      secret = decryptSecret(
-        record.encryptedSecret,
-        record.randomKey,
-        record.iv,
-        record.salt,
-        record.hmac
-      );
-    } else {
-      if (!enteredPassword || enteredPassword.trim() === '') {
-        return { success: false, message: '❌ Enter password' };
-      }
-      
-      const attemptHash = Utilities.computeDigest(
-        Utilities.DigestAlgorithm.SHA_256, 
-        enteredPassword
-      ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
-      
-      if (attemptHash !== record.hash) {
-        record.attempts = (record.attempts || 0) + 1;
-        
-        if (record.attempts >= 5) {
-          props.deleteProperty(key);
-          return { success: false, message: '❌ Too many attempts' };
-        }
-        
-        props.setProperty(key, JSON.stringify(record));
-        return { success: false, message: '❌ Wrong password' };
-      }
-      
-      secret = decryptSecret(
-        record.encryptedSecret,
-        enteredPassword,
-        record.iv,
-        record.salt,
-        record.hmac
-      );
+    const storedJson = props.getProperty(key);
+    if (!storedJson) {
+      return { success: false, message: '❌ Secret not found or already consumed' };
     }
-  } catch (e) {
+
+    let record;
+    try {
+      record = JSON.parse(storedJson);
+    } catch (e) {
+      props.deleteProperty(key);
+      return { success: false, message: '❌ Corrupted payload' };
+    }
+
+    // Immediately burn payload upon retrieval (One-Time Access)
     props.deleteProperty(key);
-    return { 
-      success: false, 
-      message: '❌ Failed to decrypt'
+
+    if (Date.now() > record.expiry) {
+      return { success: false, message: '❌ Link expired' };
+    }
+
+    return {
+      success: true,
+      ciphertext: record.ciphertext,
+      iv: record.iv,
+      salt: record.salt,
+      passwordless: record.passwordless
     };
+  } finally {
+    lock.releaseLock();
   }
-  
-  props.deleteProperty(key);
-  
-  return { 
-    success: true, 
-    secret: secret,
-    message: '✅ Success'
-  };
 }
 
 function checkLinkExists(token) {
+  if (!token) return { exists: false };
+
   const props = PropertiesService.getScriptProperties();
-  const key = 'ot_' + token;
-  const storedJson = props.getProperty(key);
-  
-  if (!storedJson) {
-    return { exists: false };
-  }
-  
+  const storedJson = props.getProperty('ot_' + token);
+
+  if (!storedJson) return { exists: false };
+
   try {
     const record = JSON.parse(storedJson);
-    const now = new Date().getTime();
-    
-    if (now > record.expiry || record.used === true) {
-      props.deleteProperty(key);
+    if (Date.now() > record.expiry) {
       return { exists: false };
     }
-    
-    return { 
+    return {
       exists: true,
-      passwordless: record.passwordless || false
+      passwordless: record.passwordless
     };
   } catch (e) {
-    props.deleteProperty(key);
     return { exists: false };
   }
 }
 
 function cleanupExpired() {
-  const props = PropertiesService.getScriptProperties();
-  const all = props.getProperties();
-  const now = new Date().getTime();
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return 0;
+
   let count = 0;
-  
-  Object.keys(all).forEach(key => {
-    if (key.startsWith('ot_')) {
-      try {
-        const record = JSON.parse(all[key]);
-        if (now > record.expiry || record.used === true) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const all = props.getProperties();
+    const now = Date.now();
+
+    Object.keys(all).forEach(key => {
+      if (key.startsWith('ot_')) {
+        try {
+          const record = JSON.parse(all[key]);
+          if (now > record.expiry) {
+            props.deleteProperty(key);
+            count++;
+          }
+        } catch (e) {
           props.deleteProperty(key);
           count++;
         }
-      } catch(e) {
-        props.deleteProperty(key);
-        count++;
       }
-    }
-  });
-  
+    });
+  } finally {
+    lock.releaseLock();
+  }
   return count;
 }

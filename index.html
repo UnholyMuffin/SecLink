@@ -6,12 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>🔐 One-Time Link</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -21,26 +16,15 @@
       justify-content: center;
       padding: 20px;
     }
-    
-    .container {
-      max-width: 700px;
-      width: 100%;
-    }
-    
+    .container { max-width: 700px; width: 100%; }
     .card {
       background: white;
       border-radius: 20px;
       padding: 40px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
       min-height: 200px;
-      position: relative;
     }
-    
-    #loadingState {
-      text-align: center;
-      padding: 40px 20px;
-    }
-    
+    #loadingState { text-align: center; padding: 40px 20px; }
     .loader {
       display: inline-block;
       width: 50px;
@@ -51,41 +35,11 @@
       animation: spin 1s linear infinite;
       margin-bottom: 20px;
     }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    
-    #generatorView {
-      display: none;
-    }
-    
-    #recipientView {
-      display: none;
-    }
-    
-    .page-title {
-      color: #2d3748;
-      font-size: 2em;
-      margin-bottom: 20px;
-      text-align: center;
-      display: block;
-      width: 100%;
-    }
-    
-    .form-group {
-      margin-bottom: 20px;
-    }
-    
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #4a5568;
-      font-size: 0.9em;
-    }
-    
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    #generatorView, #recipientView, #resultView, #recipientResultView { display: none; }
+    .page-title { color: #2d3748; font-size: 2em; margin-bottom: 20px; text-align: center; display: block; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; color: #4a5568; font-size: 0.9em; }
     input, textarea {
       width: 100%;
       padding: 15px 20px;
@@ -95,18 +49,8 @@
       transition: all 0.3s;
       font-family: inherit;
     }
-    
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-    
-    textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-    
+    input:focus, textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    textarea { min-height: 100px; resize: vertical; }
     .btn {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -119,37 +63,10 @@
       transition: all 0.3s;
       width: 100%;
     }
-    
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-    }
-    
-    .btn:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-      transform: none;
-    }
-    
-    .message {
-      margin-top: 15px;
-      padding: 12px 20px;
-      border-radius: 12px;
-      display: none;
-    }
-    
-    .success {
-      background: #c6f6d5;
-      color: #22543d;
-      display: block;
-    }
-    
-    .error {
-      background: #fed7d7;
-      color: #742a2a;
-      display: block;
-    }
-    
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+    .message { margin-top: 15px; padding: 12px 20px; border-radius: 12px; display: none; }
+    .error { background: #fed7d7; color: #742a2a; display: block; }
     .checkbox-group {
       display: flex;
       align-items: center;
@@ -160,168 +77,53 @@
       border-radius: 12px;
       border: 2px solid #e2e8f0;
     }
+    .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
+    .checkbox-group label { margin: 0; cursor: pointer; font-weight: 500; color: #4a5568; font-size: 1em; }
+    .checkbox-group .hint { color: #718096; font-size: 0.85em; margin-left: 4px; }
+    .recipient-content { text-align: center; }
+    .recipient-content .icon-large { font-size: 50px; margin-bottom: 20px; display: block; }
+    .recipient-content .title { color: #2d3748; font-size: 2em; margin-bottom: 10px; text-align: center; display: block; }
+    .recipient-box { background: #f7fafc; border-radius: 20px; padding: 30px; margin: 20px 0; text-align: center; }
+    .badge { display: inline-block; padding: 5px 15px; border-radius: 50px; font-size: 0.85em; margin-top: 10px; }
+    #resultView, #recipientResultView { text-align: center; padding: 20px 0; }
+    #resultView .result-icon, #recipientResultView .result-icon { font-size: 60px; display: block; margin-bottom: 15px; }
     
-    .checkbox-group input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    
-    .checkbox-group label {
-      margin: 0;
-      cursor: pointer;
-      font-weight: 500;
-      color: #4a5568;
-      font-size: 1em;
-    }
-    
-    .checkbox-group .hint {
-      color: #718096;
-      font-size: 0.85em;
-      font-weight: 400;
-      margin-left: 4px;
-    }
-    
-    .recipient-content {
-      text-align: center;
-    }
-    
-    .recipient-content .icon-large {
-      font-size: 50px;
-      margin-bottom: 20px;
-      display: block;
-    }
-    
-    .recipient-content .title {
-      color: #2d3748;
-      font-size: 2em;
-      margin-bottom: 10px;
-      text-align: center;
-      display: block;
-      width: 100%;
-    }
-    
-    .recipient-box {
-      background: #f7fafc;
-      border-radius: 20px;
-      padding: 30px;
-      margin: 20px 0;
-      text-align: center;
-    }
-    
-    .recipient-box .input-field {
-      width: 100%;
-      padding: 15px 20px;
-      border: 2px solid #e2e8f0;
-      border-radius: 12px;
-      font-size: 1.1em;
-      text-align: left;
-      margin-top: 10px;
-    }
-    
-    .badge {
-      display: inline-block;
-      padding: 5px 15px;
-      border-radius: 50px;
-      font-size: 0.85em;
-      margin-top: 10px;
-    }
-    
-    /* Result View - Generator */
-    #resultView {
-      display: none;
-      text-align: center;
-      padding: 20px 0;
-    }
-    
-    #resultView .result-icon {
-      font-size: 60px;
-      display: block;
-      margin-bottom: 15px;
-    }
-    
-    #resultView .result-link-box {
-      background: #f7fafc;
+    /* DISTINGUISHED GENERATED LINK BOX */
+    #resultView .result-link {
+      background: #f0fff4;
+      padding: 20px;
       border-radius: 16px;
-      padding: 25px;
-      margin: 20px 0;
+      margin: 25px 0;
+      word-break: break-all;
       border: 3px solid #48bb78;
-    }
-    
-    #resultView .result-link-label {
-      font-size: 0.85em;
-      color: #718096;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-      margin-bottom: 10px;
-    }
-    
-    #resultView .result-link-content {
       display: flex;
-      gap: 10px;
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 5px;
+      gap: 12px;
       align-items: center;
+      box-shadow: 0 4px 12px rgba(72, 187, 120, 0.15);
     }
-    
-    #resultView .result-link-content input {
+    #resultView .result-link input {
       border: none;
       background: transparent;
-      padding: 12px 15px;
+      padding: 10px;
       flex: 1;
       font-family: monospace;
-      font-size: 1.3em;
-      color: #2d3748;
-      outline: none;
-    }
-    
-    #resultView .result-link-content button {
-      background: #edf2f7;
-      border: none;
-      padding: 8px 20px;
-      border-radius: 8px;
+      font-size: 1.25em;
       font-weight: 600;
-      color: #4a5568;
+      color: #276749;
+    }
+    #resultView .result-link button {
+      background: #48bb78;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1em;
+      color: white;
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.2s;
     }
-    
-    #resultView .result-link-content button:hover {
-      background: #667eea;
-      color: white;
-    }
-    
-    #resultView .result-badge {
-      display: inline-block;
-      padding: 8px 20px;
-      border-radius: 50px;
-      font-weight: 600;
-      margin-top: 10px;
-    }
-    
-    /* Result View - Recipient */
-    #recipientResultView {
-      display: none;
-      text-align: center;
-      padding: 20px 0;
-    }
-    
-    #recipientResultView .result-icon {
-      font-size: 60px;
-      display: block;
-      margin-bottom: 15px;
-    }
-    
-    #recipientResultView .result-title {
-      color: #2d3748;
-      font-size: 1.8em;
-      margin-bottom: 20px;
-    }
+    #resultView .result-link button:hover { background: #38a169; transform: translateY(-1px); }
     
     #recipientResultView .result-secret-box {
       background: #f7fafc;
@@ -330,16 +132,7 @@
       margin: 20px 0;
       border: 3px solid #48bb78;
     }
-    
-    #recipientResultView .result-secret-label {
-      font-size: 0.85em;
-      color: #718096;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-      margin-bottom: 10px;
-    }
-    
+    #recipientResultView .result-secret-label { font-size: 0.85em; color: #718096; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 10px; }
     #recipientResultView .result-secret-content {
       background: white;
       padding: 20px;
@@ -351,103 +144,43 @@
       text-align: left;
       border: 1px solid #e2e8f0;
     }
-    
-    #recipientResultView .result-destroyed {
-      margin-top: 25px;
-      padding: 15px;
-      background: #fed7d7;
-      border-radius: 12px;
-      color: #742a2a;
-      font-weight: 600;
-      border: 2px solid #fc8181;
-    }
-    
-    /* Rate limit indicator */
-    .rate-limit-info {
-      margin-top: 10px;
-      padding: 10px 15px;
-      background: #ebf8ff;
-      border-radius: 8px;
-      font-size: 0.85em;
-      color: #2c5282;
-      text-align: center;
-      border: 1px solid #bee3f8;
-      display: none;
-    }
-    
-    .rate-limit-info .remaining {
-      font-weight: 700;
-      color: #2b6cb0;
-    }
-    
-    @media (max-width: 600px) {
-      .card {
-        padding: 20px;
-      }
-      
-      .page-title {
-        font-size: 1.5em;
-      }
-      
-      .recipient-content .title {
-        font-size: 1.5em;
-      }
-      
-      #resultView .result-link-content {
-        flex-direction: column;
-        padding: 15px;
-      }
-      
-      #resultView .result-link-content button {
-        width: 100%;
-        padding: 12px;
-      }
-      
-      #resultView .result-link-content input {
-        font-size: 1.1em;
-        text-align: center;
-      }
-      
-      #recipientResultView .result-title {
-        font-size: 1.4em;
-      }
-    }
+    #recipientResultView .result-destroyed { margin-top: 25px; padding: 15px; background: #fed7d7; border-radius: 12px; color: #742a2a; font-weight: 600; }
+    .rate-limit-info { margin-top: 10px; padding: 10px 15px; background: #ebf8ff; border-radius: 8px; font-size: 0.85em; color: #2c5282; text-align: center; border: 1px solid #bee3f8; display: none; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="card" id="app">
+    <div class="card">
       
-      <!-- LOADING -->
+      <!-- LOADING VIEW -->
       <div id="loadingState">
         <div class="loader"></div>
         <h2 style="color: #2d3748; font-weight: 400;">Loading...</h2>
       </div>
       
-      <!-- GENERATOR -->
+      <!-- GENERATOR VIEW -->
       <div id="generatorView">
-        <h1 class="page-title">🔐 Secure Send</h1>
+        <h1 class="page-title">🔐 End-to-End Encrypted Link</h1>
         
         <div class="form-group">
-          <label>🔑 Password</label>
-          <input type="text" id="linkPassword" placeholder="Set a password" value="SecurePass123">
+          <label for="linkPassword">🔑 Passphrase</label>
+          <input type="password" id="linkPassword" placeholder="Set a decryption passphrase">
         </div>
         
         <div class="checkbox-group">
           <input type="checkbox" id="passwordlessToggle">
           <label for="passwordlessToggle">
-            🔓 No password
-            <span class="hint">(less secure)</span>
+            🔓 Passwordless Link
+            <span class="hint">(Encryption key stored in URL hash fragment)</span>
           </label>
         </div>
         
         <div class="form-group">
-          <label>📦 Secret</label>
-          <textarea id="secretMessage" placeholder="Enter your secret message...">WiFi: CoffeeShop
-Password: latte123</textarea>
+          <label for="secretMessage">📦 Secret Payload</label>
+          <textarea id="secretMessage" placeholder="Enter sensitive text to share..."></textarea>
         </div>
         
-        <button class="btn" id="generateBtn">✨ Generate</button>
+        <button class="btn" id="generateBtn">✨ Encrypt & Create Link</button>
         
         <div id="rateLimitInfo" class="rate-limit-info">
           ⏳ <span class="remaining">5</span> links remaining this minute
@@ -456,37 +189,32 @@ Password: latte123</textarea>
         <div id="generatorMessage" class="message"></div>
       </div>
       
-      <!-- RESULT VIEW (Generator) -->
+      <!-- GENERATOR RESULT VIEW -->
       <div id="resultView">
         <span class="result-icon">✅</span>
         <h2 style="color: #2d3748; margin-bottom: 10px;">Link Generated</h2>
-        
-        <div class="result-link-box">
-          <div class="result-link-label">🔗 Your One-Time Link</div>
-          <div class="result-link-content">
-            <input type="text" id="resultLinkInput" readonly value="">
-            <button id="resultCopyBtn">📋 Copy</button>
-          </div>
+        <div class="result-link">
+          <input type="text" id="resultLinkInput" readonly>
+          <button id="resultCopyBtn">📋 Copy Link</button>
         </div>
-        
-        <span class="result-badge" style="background: #fed7d7; color: #c53030;">⏳ 1 hour • One use</span>
+        <span class="badge" style="background: #fed7d7; color: #c53030;">⏳ 1 hour • Self-Destructs on Read</span>
       </div>
       
-      <!-- RECIPIENT -->
+      <!-- RECIPIENT VIEW -->
       <div id="recipientView"></div>
       
-      <!-- RESULT VIEW (Recipient) -->
+      <!-- RECIPIENT RESULT VIEW -->
       <div id="recipientResultView">
         <span class="result-icon">🔓</span>
-        <h2 class="result-title">Secret Revealed</h2>
+        <h2 style="color: #2d3748;">Secret Decrypted</h2>
         
         <div class="result-secret-box">
-          <div class="result-secret-label">📋 Your Secret</div>
+          <div class="result-secret-label">📋 Decrypted Message</div>
           <div class="result-secret-content" id="recipientResultSecret"></div>
         </div>
         
         <div class="result-destroyed">
-          ⚠️ This link has been destroyed
+          ⚠️ Payload destroyed from server. Refreshing will make this link inaccessible.
         </div>
       </div>
       
@@ -496,269 +224,391 @@ Password: latte123</textarea>
   <script>
     (function() {
       "use strict";
-      
+
+      // ================================================
+      // WEB CRYPTO API (AES-256-GCM + PBKDF2)
+      // ================================================
+
+      function arrayBufferToBase64(buffer) {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary);
+      }
+
+      function base64ToArrayBuffer(base64) {
+        const binary = window.atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes.buffer;
+      }
+
+      function arrayBufferToHex(buffer) {
+        return Array.from(new Uint8Array(buffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+      }
+
+      function hexToArrayBuffer(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+          bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+        }
+        return bytes.buffer;
+      }
+
+      async function deriveKeyFromPassword(password, saltBytes) {
+        const enc = new TextEncoder();
+        const keyMaterial = await window.crypto.subtle.importKey(
+          "raw",
+          enc.encode(password),
+          { name: "PBKDF2" },
+          false,
+          ["deriveKey"]
+        );
+
+        return await window.crypto.subtle.deriveKey(
+          {
+            name: "PBKDF2",
+            salt: saltBytes,
+            iterations: 100000,
+            hash: "SHA-256"
+          },
+          keyMaterial,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
+        );
+      }
+
+      async function encryptData(text, password, isPasswordless) {
+        const enc = new TextEncoder();
+        const encodedText = enc.encode(text);
+        const iv = window.crypto.getRandomValues(new Uint8Array(12));
+
+        let key;
+        let saltBase64 = null;
+        let urlFragmentKey = null;
+
+        if (isPasswordless) {
+          key = await window.crypto.subtle.generateKey(
+            { name: "AES-GCM", length: 256 },
+            true,
+            ["encrypt", "decrypt"]
+          );
+          const rawKey = await window.crypto.subtle.exportKey("raw", key);
+          urlFragmentKey = arrayBufferToHex(rawKey);
+        } else {
+          const salt = window.crypto.getRandomValues(new Uint8Array(16));
+          saltBase64 = arrayBufferToBase64(salt);
+          key = await deriveKeyFromPassword(password, salt);
+        }
+
+        const ciphertextBuffer = await window.crypto.subtle.encrypt(
+          { name: "AES-GCM", iv: iv },
+          key,
+          encodedText
+        );
+
+        return {
+          ciphertext: arrayBufferToBase64(ciphertextBuffer),
+          iv: arrayBufferToBase64(iv),
+          salt: saltBase64,
+          urlFragmentKey: urlFragmentKey
+        };
+      }
+
+      async function decryptData(ciphertextB64, ivB64, passwordOrHexKey, saltB64, isPasswordless) {
+        const ciphertextBuffer = base64ToArrayBuffer(ciphertextB64);
+        const ivBuffer = base64ToArrayBuffer(ivB64);
+
+        let key;
+        if (isPasswordless) {
+          const keyBuffer = hexToArrayBuffer(passwordOrHexKey);
+          key = await window.crypto.subtle.importKey(
+            "raw",
+            keyBuffer,
+            { name: "AES-GCM", length: 256 },
+            false,
+            ["decrypt"]
+          );
+        } else {
+          const saltBuffer = base64ToArrayBuffer(saltB64);
+          key = await deriveKeyFromPassword(passwordOrHexKey, new Uint8Array(saltBuffer));
+        }
+
+        const decryptedBuffer = await window.crypto.subtle.decrypt(
+          { name: "AES-GCM", iv: new Uint8Array(ivBuffer) },
+          key,
+          ciphertextBuffer
+        );
+
+        const dec = new TextDecoder();
+        return dec.decode(decryptedBuffer);
+      }
+
+      // ================================================
+      // UI CONTROLLER
+      // ================================================
+
       const loadingState = document.getElementById('loadingState');
       const generatorView = document.getElementById('generatorView');
       const recipientView = document.getElementById('recipientView');
       const resultView = document.getElementById('resultView');
       const recipientResultView = document.getElementById('recipientResultView');
       const rateLimitInfo = document.getElementById('rateLimitInfo');
-      
+
       function showView(viewId) {
         loadingState.style.display = 'none';
         generatorView.style.display = 'none';
         recipientView.style.display = 'none';
         resultView.style.display = 'none';
         recipientResultView.style.display = 'none';
-        
-        if (viewId === 'loading') {
-          loadingState.style.display = 'block';
-        } else if (viewId === 'generator') {
-          generatorView.style.display = 'block';
-          updateRateLimitDisplay();
-        } else if (viewId === 'recipient') {
-          recipientView.style.display = 'block';
-        } else if (viewId === 'result') {
-          resultView.style.display = 'block';
-        } else if (viewId === 'recipientResult') {
-          recipientResultView.style.display = 'block';
-        }
+
+        if (viewId === 'loading') loadingState.style.display = 'block';
+        if (viewId === 'generator') { generatorView.style.display = 'block'; updateRateLimitDisplay(); }
+        if (viewId === 'recipient') recipientView.style.display = 'block';
+        if (viewId === 'result') resultView.style.display = 'block';
+        if (viewId === 'recipientResult') recipientResultView.style.display = 'block';
       }
-      
+
       function updateRateLimitDisplay() {
         google.script.run
-          .withSuccessHandler(function(result) {
-            if (result && result.remaining !== undefined) {
+          .withSuccessHandler(function(res) {
+            if (res && res.remaining !== undefined) {
               rateLimitInfo.style.display = 'block';
-              document.querySelector('#rateLimitInfo .remaining').textContent = result.remaining;
+              document.querySelector('#rateLimitInfo .remaining').textContent = res.remaining;
             }
-          })
-          .withFailureHandler(function() {
-            rateLimitInfo.style.display = 'none';
           })
           .getRateLimitStatus();
       }
-      
+
       function init() {
-        google.script.url.getLocation(function(location) {
-          if (location.parameters.v && location.parameters.v[0] === 'view' && location.parameters.token) {
+        google.script.url.getLocation(function(loc) {
+          if (loc.parameters.v && loc.parameters.v[0] === 'view' && loc.parameters.token) {
             showView('recipient');
-            showRecipientView(location.parameters.token[0]);
+            initRecipientView(loc.parameters.token[0], loc.hash);
           } else {
             showView('generator');
             initGeneratorView();
           }
         });
       }
-      
-      // ============ GENERATOR ============
+
       function initGeneratorView() {
-        const passwordlessToggle = document.getElementById('passwordlessToggle');
-        const linkPasswordField = document.getElementById('linkPassword');
-        
-        passwordlessToggle.addEventListener('change', function() {
+        const toggle = document.getElementById('passwordlessToggle');
+        const passField = document.getElementById('linkPassword');
+
+        toggle.addEventListener('change', function() {
           if (this.checked) {
-            linkPasswordField.disabled = true;
-            linkPasswordField.placeholder = 'No password required';
-            linkPasswordField.style.opacity = '0.6';
-            linkPasswordField.value = '';
+            passField.disabled = true;
+            passField.value = '';
+            passField.placeholder = 'No passphrase required (Key in URL hash)';
+            passField.style.opacity = '0.5';
           } else {
-            linkPasswordField.disabled = false;
-            linkPasswordField.placeholder = 'Set a password';
-            linkPasswordField.style.opacity = '1';
-            linkPasswordField.value = 'SecurePass123';
+            passField.disabled = false;
+            passField.placeholder = 'Set a decryption passphrase';
+            passField.style.opacity = '1';
           }
         });
-        
+
         const generateBtn = document.getElementById('generateBtn');
-        generateBtn.addEventListener('click', function() {
-          const linkPassword = document.getElementById('linkPassword').value.trim();
-          const secretMessage = document.getElementById('secretMessage').value.trim();
-          const isPasswordless = document.getElementById('passwordlessToggle').checked;
-          
-          if (!isPasswordless && !linkPassword) {
-            showMessage('generatorMessage', '❌ Set a password', 'error');
+        generateBtn.addEventListener('click', async function() {
+          const password = passField.value.trim();
+          const secret = document.getElementById('secretMessage').value.trim();
+          const isPasswordless = toggle.checked;
+
+          if (!isPasswordless && !password) {
+            showMessage('generatorMessage', '❌ Please set a passphrase');
             return;
           }
-          
-          if (!secretMessage) {
-            showMessage('generatorMessage', '❌ Enter a secret', 'error');
+          if (!secret) {
+            showMessage('generatorMessage', '❌ Secret payload cannot be empty');
             return;
           }
-          
+
           generateBtn.disabled = true;
-          generateBtn.innerHTML = '⏳ Generating...';
+          generateBtn.textContent = '⏳ Encrypting Client-Side...';
           hideMessage('generatorMessage');
-          
-          google.script.run
-            .withSuccessHandler(function(result) {
-              generateBtn.disabled = false;
-              generateBtn.innerHTML = '✨ Generate';
-              
-              if (result && result.link) {
-                showView('result');
-                document.getElementById('resultLinkInput').value = result.link;
-              }
-            })
-            .withFailureHandler(function(error) {
-              generateBtn.disabled = false;
-              generateBtn.innerHTML = '✨ Generate';
-              showMessage('generatorMessage', error.message || '❌ Error', 'error');
-            })
-            .generateLink(linkPassword, secretMessage, isPasswordless);
+
+          try {
+            const encrypted = await encryptData(secret, password, isPasswordless);
+
+            google.script.run
+              .withSuccessHandler(function(res) {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '✨ Encrypt & Create Link';
+
+                if (res && res.url) {
+                  let finalUrl = res.url;
+                  if (isPasswordless && encrypted.urlFragmentKey) {
+                    finalUrl += '#' + encrypted.urlFragmentKey;
+                  }
+                  showView('result');
+                  document.getElementById('resultLinkInput').value = finalUrl;
+                }
+              })
+              .withFailureHandler(function(err) {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '✨ Encrypt & Create Link';
+                showMessage('generatorMessage', err.message || '❌ Server error');
+              })
+              .saveSecretPayload({
+                ciphertext: encrypted.ciphertext,
+                iv: encrypted.iv,
+                salt: encrypted.salt,
+                passwordless: isPasswordless
+              });
+
+          } catch (e) {
+            generateBtn.disabled = false;
+            generateBtn.textContent = '✨ Encrypt & Create Link';
+            showMessage('generatorMessage', '❌ Encryption failed: ' + e.message);
+          }
         });
-        
+
         document.getElementById('resultCopyBtn').addEventListener('click', function() {
-          const linkInput = document.getElementById('resultLinkInput');
-          linkInput.select();
-          document.execCommand('copy');
-          this.textContent = '✅ Copied!';
-          setTimeout(() => {
-            this.textContent = '📋 Copy';
-          }, 2000);
+          const input = document.getElementById('resultLinkInput');
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(input.value).then(() => showCopySuccess(this));
+          } else {
+            input.select();
+            document.execCommand('copy');
+            showCopySuccess(this);
+          }
         });
       }
-      
-      // ============ RECIPIENT ============
-      function showRecipientView(token) {
+
+      function showCopySuccess(btn) {
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = '📋 Copy Link'; }, 2000);
+      }
+
+      function initRecipientView(token, hashFragment) {
         recipientView.innerHTML = `
           <div class="recipient-content">
             <div class="loader" style="margin: 40px auto 20px;"></div>
-            <h2 class="title" style="font-weight: 400;">Checking...</h2>
+            <h2 class="title" style="font-weight: 400;">Checking link status...</h2>
           </div>
         `;
-        
+
         google.script.run
-          .withSuccessHandler(function(response) {
-            if (!response || !response.exists) {
+          .withSuccessHandler(function(res) {
+            if (!res || !res.exists) {
               recipientView.innerHTML = `
                 <div class="recipient-content">
                   <span class="icon-large">❌</span>
-                  <h1 class="title">Not Found</h1>
-                  <div style="background: #fed7d7; padding: 15px; border-radius: 12px; color: #742a2a; margin-top: 20px;">
-                    ⚠️ Expired or used
+                  <h1 class="title">Secret Not Found</h1>
+                  <div class="result-destroyed" style="margin-top: 20px;">
+                    ⚠️ This secret has expired or was already read and destroyed.
                   </div>
                 </div>
               `;
               return;
             }
-            
-            const isPasswordless = response.passwordless || false;
-            
+
+            const isPasswordless = res.passwordless;
+            const fragmentKey = (hashFragment || '').replace('#', '');
+
             recipientView.innerHTML = `
               <div class="recipient-content">
                 <span class="icon-large">🔐</span>
-                <h1 class="title">One-Time Secret</h1>
+                <h1 class="title">One-Time Secret Payload</h1>
+                <p style="color: #718096; margin-bottom: 20px;">Fetching this secret burns it permanently from the server.</p>
                 
                 <div class="recipient-box">
                   ${isPasswordless ? `
-                    <div style="margin-bottom: 20px; color: #ed8936; font-weight: 600;">
-                      🔓 No password required
-                    </div>
                     <button id="unlockBtn" class="btn" style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);">
-                      🔓 Reveal
+                      🔓 Fetch & Decrypt Secret
                     </button>
                   ` : `
                     <div style="margin-bottom: 20px;">
-                      <label style="font-weight: 600; color: #4a5568;">🔑 Enter password</label>
-                      <input type="password" id="recipientPassword" 
-                             placeholder="Password" 
-                             class="input-field">
+                      <label style="font-weight: 600; color: #4a5568;">🔑 Enter Decryption Passphrase</label>
+                      <input type="password" id="recipientPassword" placeholder="Passphrase" style="margin-top: 8px;">
                     </div>
-                    <button id="unlockBtn" class="btn">🔓 Unlock</button>
+                    <button id="unlockBtn" class="btn">🔓 Fetch & Decrypt</button>
                   `}
-                  
                   <div id="recipientMessage" class="message"></div>
                 </div>
-                
-                <div style="margin-top: 15px;">
-                  <span class="badge" style="background: ${isPasswordless ? '#fefcbf' : '#fed7d7'}; color: ${isPasswordless ? '#744210' : '#c53030'};">
-                    ${isPasswordless ? '🔓 Passwordless' : '🔑 Protected'} • ⏳ One use
-                  </span>
-                </div>
               </div>
             `;
-            
+
             const unlockBtn = document.getElementById('unlockBtn');
             const pwdField = document.getElementById('recipientPassword');
-            
-            function attemptUnlock(password) {
+
+            unlockBtn.addEventListener('click', function() {
+              const passwordInput = !isPasswordless && pwdField ? pwdField.value.trim() : '';
+
+              if (!isPasswordless && !passwordInput) {
+                showMessage('recipientMessage', '❌ Passphrase is required');
+                return;
+              }
+
               unlockBtn.disabled = true;
-              unlockBtn.innerHTML = '⏳ ...';
+              unlockBtn.textContent = '⏳ Fetching & Decrypting...';
               hideMessage('recipientMessage');
-              
+
               google.script.run
-                .withSuccessHandler(function(response) {
-                  unlockBtn.disabled = false;
-                  unlockBtn.innerHTML = isPasswordless ? '🔓 Reveal' : '🔓 Unlock';
-                  
-                  if (response && response.success) {
-                    showView('recipientResult');
-                    document.getElementById('recipientResultSecret').textContent = response.secret;
-                  } else {
-                    showMessage('recipientMessage', response.message || '❌ Failed', 'error');
+                .withSuccessHandler(async function(payloadRes) {
+                  if (!payloadRes || !payloadRes.success) {
                     unlockBtn.disabled = false;
-                    unlockBtn.innerHTML = isPasswordless ? '🔓 Reveal' : '🔓 Unlock';
+                    unlockBtn.textContent = '🔓 Fetch & Decrypt';
+                    showMessage('recipientMessage', payloadRes.message || '❌ Decryption failed');
+                    return;
+                  }
+
+                  try {
+                    const keyOrPass = isPasswordless ? fragmentKey : passwordInput;
+                    if (isPasswordless && !keyOrPass) {
+                      throw new Error('Key missing from URL fragment');
+                    }
+
+                    const plaintext = await decryptData(
+                      payloadRes.ciphertext,
+                      payloadRes.iv,
+                      keyOrPass,
+                      payloadRes.salt,
+                      isPasswordless
+                    );
+
+                    showView('recipientResult');
+                    document.getElementById('recipientResultSecret').textContent = plaintext;
+                  } catch (err) {
+                    unlockBtn.disabled = false;
+                    unlockBtn.textContent = '🔓 Fetch & Decrypt';
+                    showMessage('recipientMessage', '❌ Decryption failed: Invalid passphrase or corrupted key.');
                   }
                 })
-                .withFailureHandler(function(error) {
+                .withFailureHandler(function(err) {
                   unlockBtn.disabled = false;
-                  unlockBtn.innerHTML = isPasswordless ? '🔓 Reveal' : '🔓 Unlock';
-                  showMessage('recipientMessage', '❌ ' + error.message, 'error');
+                  unlockBtn.textContent = '🔓 Fetch & Decrypt';
+                  showMessage('recipientMessage', '❌ ' + err.message);
                 })
-                .consumeLink(token, password || '');
-            }
-            
-            if (isPasswordless) {
-              unlockBtn.addEventListener('click', function() {
-                attemptUnlock('');
-              });
-            } else {
-              unlockBtn.addEventListener('click', function() {
-                const password = pwdField.value.trim();
-                if (!password) {
-                  showMessage('recipientMessage', '❌ Enter password', 'error');
-                  return;
-                }
-                attemptUnlock(password);
-              });
-              pwdField.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                  unlockBtn.click();
-                }
-              });
-            }
-          })
-          .withFailureHandler(function(error) {
-            recipientView.innerHTML = `
-              <div class="recipient-content">
-                <span class="icon-large">❌</span>
-                <h1 class="title">Error</h1>
-                <p style="color: #718096; margin-top: 10px;">${error.message}</p>
-              </div>
-            `;
+                .fetchSecretPayload(token);
+            });
           })
           .checkLinkExists(token);
       }
-      
-      function showMessage(elementId, text, type) {
+
+      function showMessage(elementId, text) {
         const el = document.getElementById(elementId);
         if (el) {
           el.textContent = text;
-          el.className = 'message ' + type;
+          el.className = 'message error';
           el.style.display = 'block';
         }
       }
-      
+
       function hideMessage(elementId) {
         const el = document.getElementById(elementId);
-        if (el) {
-          el.style.display = 'none';
-        }
+        if (el) el.style.display = 'none';
       }
-      
+
       init();
-      
     })();
   </script>
 </body>
