@@ -241,30 +241,45 @@
       margin-bottom: 15px;
     }
     
-    #resultView .result-link {
+    #resultView .result-link-box {
       background: #f7fafc;
-      padding: 20px;
-      border-radius: 12px;
+      border-radius: 16px;
+      padding: 25px;
       margin: 20px 0;
-      word-break: break-all;
-      font-family: monospace;
-      font-size: 0.95em;
-      border: 2px solid #e2e8f0;
+      border: 3px solid #48bb78;
+    }
+    
+    #resultView .result-link-label {
+      font-size: 0.85em;
+      color: #718096;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    
+    #resultView .result-link-content {
       display: flex;
       gap: 10px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 5px;
       align-items: center;
     }
     
-    #resultView .result-link input {
+    #resultView .result-link-content input {
       border: none;
       background: transparent;
-      padding: 10px;
+      padding: 12px 15px;
       flex: 1;
       font-family: monospace;
-      font-size: 0.95em;
+      font-size: 1.3em;
+      color: #2d3748;
+      outline: none;
     }
     
-    #resultView .result-link button {
+    #resultView .result-link-content button {
       background: #edf2f7;
       border: none;
       padding: 8px 20px;
@@ -273,9 +288,10 @@
       color: #4a5568;
       cursor: pointer;
       white-space: nowrap;
+      transition: all 0.2s;
     }
     
-    #resultView .result-link button:hover {
+    #resultView .result-link-content button:hover {
       background: #667eea;
       color: white;
     }
@@ -286,24 +302,6 @@
       border-radius: 50px;
       font-weight: 600;
       margin-top: 10px;
-    }
-    
-    .new-link-btn {
-      margin-top: 20px;
-      background: #edf2f7;
-      color: #4a5568;
-      border: none;
-      padding: 12px 30px;
-      border-radius: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-block;
-    }
-    
-    .new-link-btn:hover {
-      background: #667eea;
-      color: white;
     }
     
     /* Result View - Recipient */
@@ -395,14 +393,19 @@
         font-size: 1.5em;
       }
       
-      #resultView .result-link {
+      #resultView .result-link-content {
         flex-direction: column;
         padding: 15px;
       }
       
-      #resultView .result-link button {
+      #resultView .result-link-content button {
         width: 100%;
         padding: 12px;
+      }
+      
+      #resultView .result-link-content input {
+        font-size: 1.1em;
+        text-align: center;
       }
       
       #recipientResultView .result-title {
@@ -457,13 +460,16 @@ Password: latte123</textarea>
       <div id="resultView">
         <span class="result-icon">✅</span>
         <h2 style="color: #2d3748; margin-bottom: 10px;">Link Generated</h2>
-        <div class="result-link">
-          <input type="text" id="resultLinkInput" readonly value="">
-          <button id="resultCopyBtn">📋 Copy</button>
+        
+        <div class="result-link-box">
+          <div class="result-link-label">🔗 Your One-Time Link</div>
+          <div class="result-link-content">
+            <input type="text" id="resultLinkInput" readonly value="">
+            <button id="resultCopyBtn">📋 Copy</button>
+          </div>
         </div>
+        
         <span class="result-badge" style="background: #fed7d7; color: #c53030;">⏳ 1 hour • One use</span>
-        <br>
-        <button class="new-link-btn" id="newLinkBtn">✨ New Link</button>
       </div>
       
       <!-- RECIPIENT -->
@@ -610,11 +616,6 @@ Password: latte123</textarea>
           setTimeout(() => {
             this.textContent = '📋 Copy';
           }, 2000);
-        });
-        
-        document.getElementById('newLinkBtn').addEventListener('click', function() {
-          showView('generator');
-          document.getElementById('generatorMessage').style.display = 'none';
         });
       }
       

@@ -1,65 +1,46 @@
 // ================================================
-// SECURE ONE-TIME LINK GENERATOR - FULL CODE
+// SECURE ONE-TIME LINK GENERATOR - v1.5
+// Google Apps Script
 // ================================================
 
-/**
- * Serves the HTML interface
- */
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('index')
-    .setTitle('🔐 Secure One-Time Link Generator')
+    .setTitle('🔐 One-Time Link')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 // ================================================
-// ENCRYPTION HELPERS
+// ENCRYPTION
 // ================================================
 
-/**
- * Encrypts a message using XOR cipher with SHA-256 derived key
- * @param {string} text - The text to encrypt
- * @param {string} password - The password to derive key from
- * @returns {Object} { encrypted: string, iv: string, salt: string, hmac: string }
- */
 function encryptSecret(text, password) {
   if (!text || !password) {
-    throw new Error('Text and password required for encryption');
+    throw new Error('Text and password required');
   }
   
-  // Generate random salt (16 characters)
   const salt = Utilities.getUuid().replace(/-/g, '').substring(0, 16);
-  
-  // Generate random IV (16 characters)
   const iv = Utilities.getUuid().replace(/-/g, '').substring(0, 16);
   
-  // Derive key using SHA-256 with salt and IV
   const keyMaterial = Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256,
     password + salt + iv
   ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
   
-  // Use 32 chars as key
   const key = keyMaterial.substring(0, 32);
-  
-  // Combine key + iv for encryption
   const combinedKey = key + iv;
   
-  // Convert to bytes
   const textBytes = Utilities.newBlob(text).getBytes();
   const keyBytes = Utilities.newBlob(combinedKey).getBytes();
   
-  // XOR encryption
   const encryptedBytes = [];
   for (let i = 0; i < textBytes.length; i++) {
     const keyByte = keyBytes[i % keyBytes.length];
     encryptedBytes.push(textBytes[i] ^ keyByte);
   }
   
-  // Convert to Base64 for storage
   const encryptedBase64 = Utilities.base64Encode(encryptedBytes);
   
-  // Add HMAC for integrity check
   const hmac = Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256,
     encryptedBase64 + password + salt
@@ -73,32 +54,21 @@ function encryptSecret(text, password) {
   };
 }
 
-/**
- * Decrypts a message using XOR cipher with SHA-256 derived key
- * @param {string} encryptedBase64 - The encrypted text in Base64
- * @param {string} password - The password to derive key from
- * @param {string} iv - The IV used for encryption
- * @param {string} salt - The salt used for key derivation
- * @param {string} hmac - The HMAC for integrity verification
- * @returns {string} Decrypted text
- */
 function decryptSecret(encryptedBase64, password, iv, salt, hmac) {
   if (!encryptedBase64 || !password || !iv || !salt) {
-    throw new Error('Missing required parameters for decryption');
+    throw new Error('Missing required parameters');
   }
   
   try {
-    // Verify HMAC first
     const hmacCheck = Utilities.computeDigest(
       Utilities.DigestAlgorithm.SHA_256,
       encryptedBase64 + password + salt
     ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
     
     if (hmac && hmac !== hmacCheck.substring(0, 32)) {
-      throw new Error('Data integrity check failed');
+      throw new Error('Integrity check failed');
     }
     
-    // Derive key using same method as encryption
     const keyMaterial = Utilities.computeDigest(
       Utilities.DigestAlgorithm.SHA_256,
       password + salt + iv
@@ -107,56 +77,133 @@ function decryptSecret(encryptedBase64, password, iv, salt, hmac) {
     const key = keyMaterial.substring(0, 32);
     const combinedKey = key + iv;
     
-    // Decode from Base64
     const encryptedBytes = Utilities.base64Decode(encryptedBase64);
     const keyBytes = Utilities.newBlob(combinedKey).getBytes();
     
-    // XOR decryption (same as encryption)
     const decryptedBytes = [];
     for (let i = 0; i < encryptedBytes.length; i++) {
       const keyByte = keyBytes[i % keyBytes.length];
       decryptedBytes.push(encryptedBytes[i] ^ keyByte);
     }
     
-    // Convert to string
     return Utilities.newBlob(decryptedBytes).getDataAsString();
   } catch (e) {
-    throw new Error('Decryption failed: ' + e.message);
+    throw new Error('Decryption failed');
   }
 }
 
 // ================================================
-// CORE LINK FUNCTIONS
+// RATE LIMITING - 5 links per minute
 // ================================================
 
-/**
- * Generates a secure one-time link with encrypted secret
- * @param {string} linkPassword - The password to protect the link
- * @param {string} secretMessage - The secret to encrypt and send
- * @param {boolean} isPasswordless - Whether the link requires a password
- * @returns {Object} { link: string, token: string, expiry: number }
- */
+function checkRateLimit() {
+  try {
+    const userEmail = Session.getActiveUser().getEmail();
+    const props = PropertiesService.getScriptProperties();
+    const key = 'rate_limit_' + userEmail;
+    const now = Date.now();
+    const windowMs = 60000; // 1 minute
+    const maxLinks = 5;
+    
+    const storedData = props.getProperty(key);
+    let data = { count: 0, timestamp: now, requests: [] };
+    
+    if (storedData) {
+      try {
+        data = JSON.parse(storedData);
+        if (now - data.timestamp > windowMs) {
+          data = { count: 0, timestamp: now, requests: [] };
+        }
+      } catch(e) {
+        data = { count: 0, timestamp: now, requests: [] };
+      }
+    }
+    
+    if (data.count >= maxLinks) {
+      const oldestRequest = data.requests[0] || data.timestamp;
+      const waitTime = Math.ceil((oldestRequest + windowMs - now) / 1000);
+      return { 
+        allowed: false, 
+        message: '❌ Please wait ' + waitTime + ' seconds' 
+      };
+    }
+    
+    data.count++;
+    data.timestamp = now;
+    data.requests.push(now);
+    data.requests = data.requests.filter(time => now - time < windowMs);
+    
+    props.setProperty(key, JSON.stringify(data));
+    
+    return { 
+      allowed: true, 
+      remaining: maxLinks - data.count,
+      limit: maxLinks
+    };
+  } catch (e) {
+    console.log('Rate limit check failed: ' + e.message);
+    return { allowed: true };
+  }
+}
+
+function getRateLimitStatus() {
+  try {
+    const userEmail = Session.getActiveUser().getEmail();
+    const props = PropertiesService.getScriptProperties();
+    const key = 'rate_limit_' + userEmail;
+    const now = Date.now();
+    const windowMs = 60000;
+    const maxLinks = 5;
+    
+    const storedData = props.getProperty(key);
+    if (!storedData) {
+      return { remaining: maxLinks, limit: maxLinks };
+    }
+    
+    try {
+      const data = JSON.parse(storedData);
+      if (now - data.timestamp > windowMs) {
+        return { remaining: maxLinks, limit: maxLinks };
+      }
+      return { 
+        remaining: Math.max(0, maxLinks - data.count), 
+        limit: maxLinks 
+      };
+    } catch(e) {
+      return { remaining: maxLinks, limit: maxLinks };
+    }
+  } catch(e) {
+    return { remaining: 5, limit: 5 };
+  }
+}
+
+// ================================================
+// CORE FUNCTIONS
+// ================================================
+
 function generateLink(linkPassword, secretMessage, isPasswordless) {
-  // Input validation
+  const rateLimit = checkRateLimit();
+  if (!rateLimit.allowed) {
+    throw new Error(rateLimit.message);
+  }
+  
   if (!secretMessage || secretMessage.trim() === '') {
     throw new Error('Secret message cannot be empty');
   }
   
   const token = Utilities.getUuid();
   const now = new Date().getTime();
-  const expiry = now + 60 * 60 * 1000; // 1 hour
+  const expiry = now + 60 * 60 * 1000;
   
   let data = {
     expiry: expiry,
     used: false,
     passwordless: isPasswordless || false,
-    attempts: 0 // Track failed attempts
+    attempts: 0
   };
   
   try {
-    // Handle passwordless vs password-protected
     if (isPasswordless || !linkPassword || linkPassword.trim() === '') {
-      // Generate random key for passwordless access
       const randomKey = Utilities.getUuid().replace(/-/g, '').substring(0, 32);
       const encryptionResult = encryptSecret(secretMessage, randomKey);
       
@@ -167,13 +214,11 @@ function generateLink(linkPassword, secretMessage, isPasswordless) {
       data.randomKey = randomKey;
       data.hash = null;
     } else {
-      // Hash the password for verification
       const passwordHash = Utilities.computeDigest(
         Utilities.DigestAlgorithm.SHA_256, 
         linkPassword
       ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
       
-      // Encrypt with the user's password
       const encryptionResult = encryptSecret(secretMessage, linkPassword);
       
       data.encryptedSecret = encryptionResult.encrypted;
@@ -184,39 +229,35 @@ function generateLink(linkPassword, secretMessage, isPasswordless) {
       data.randomKey = null;
     }
   } catch (e) {
-    throw new Error('Failed to encrypt secret: ' + e.message);
+    throw new Error('Failed to encrypt: ' + e.message);
   }
   
-  // Save to database
   try {
     PropertiesService.getScriptProperties().setProperty('ot_' + token, JSON.stringify(data));
   } catch (e) {
-    throw new Error('Failed to save link: ' + e.message);
+    throw new Error('Failed to save link');
   }
   
-  // Generate the one-time URL
   const url = ScriptApp.getService().getUrl() + '?v=view&token=' + encodeURIComponent(token);
   
   return { 
     link: url, 
     token: token, 
-    expiry: expiry 
+    expiry: expiry,
+    rateLimit: {
+      remaining: rateLimit.remaining || 5,
+      limit: 5
+    }
   };
 }
 
-/**
- * Consumes a one-time link and decrypts the secret
- * @param {string} token - The link token
- * @param {string} enteredPassword - The password entered by the recipient
- * @returns {Object} { success: boolean, secret: string, message: string }
- */
 function consumeLink(token, enteredPassword) {
   const props = PropertiesService.getScriptProperties();
   const key = 'ot_' + token;
   const storedJson = props.getProperty(key);
   
   if (!storedJson) {
-    return { success: false, message: '❌ Link not found or already used' };
+    return { success: false, message: '❌ Not found' };
   }
   
   let record;
@@ -224,33 +265,29 @@ function consumeLink(token, enteredPassword) {
     record = JSON.parse(storedJson); 
   } catch (e) { 
     props.deleteProperty(key);
-    return { success: false, message: '❌ Invalid link data' }; 
+    return { success: false, message: '❌ Invalid' }; 
   }
   
-  // Check if already used
   if (record.used === true) { 
     props.deleteProperty(key); 
-    return { success: false, message: '❌ This link has already been used' }; 
+    return { success: false, message: '❌ Already used' }; 
   }
   
-  // Check expiry
   const now = new Date().getTime();
   if (now > record.expiry) { 
     props.deleteProperty(key); 
-    return { success: false, message: '❌ Link expired (1 hour lifetime)' }; 
+    return { success: false, message: '❌ Expired' }; 
   }
   
   let secret = null;
   
   try {
-    // Handle passwordless links
     if (record.passwordless === true) {
       if (!record.randomKey) {
         props.deleteProperty(key);
-        return { success: false, message: '❌ Invalid passwordless link configuration' };
+        return { success: false, message: '❌ Invalid' };
       }
       
-      // Decrypt using the stored random key
       secret = decryptSecret(
         record.encryptedSecret,
         record.randomKey,
@@ -259,32 +296,27 @@ function consumeLink(token, enteredPassword) {
         record.hmac
       );
     } else {
-      // Password-protected: verify password first
       if (!enteredPassword || enteredPassword.trim() === '') {
-        return { success: false, message: '❌ Please enter a password' };
+        return { success: false, message: '❌ Enter password' };
       }
       
-      // Verify password hash
       const attemptHash = Utilities.computeDigest(
         Utilities.DigestAlgorithm.SHA_256, 
         enteredPassword
       ).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
       
       if (attemptHash !== record.hash) {
-        // Track failed attempts
         record.attempts = (record.attempts || 0) + 1;
         
         if (record.attempts >= 5) {
-          // Destroy link after 5 failed attempts
           props.deleteProperty(key);
-          return { success: false, message: '❌ Too many failed attempts. Link destroyed.' };
+          return { success: false, message: '❌ Too many attempts' };
         }
         
         props.setProperty(key, JSON.stringify(record));
-        return { success: false, message: '❌ Incorrect password' };
+        return { success: false, message: '❌ Wrong password' };
       }
       
-      // Decrypt using the provided password
       secret = decryptSecret(
         record.encryptedSecret,
         enteredPassword,
@@ -294,33 +326,22 @@ function consumeLink(token, enteredPassword) {
       );
     }
   } catch (e) {
-    // If decryption fails, destroy the link to prevent further attempts
     props.deleteProperty(key);
     return { 
       success: false, 
-      message: '❌ Unable to decrypt secret. Link has been destroyed for security.'
+      message: '❌ Failed to decrypt'
     };
   }
   
-  // SUCCESS! Delete immediately and return secret
   props.deleteProperty(key);
   
   return { 
     success: true, 
     secret: secret,
-    message: '✅ Link verified! Your secret is below:'
+    message: '✅ Success'
   };
 }
 
-// ================================================
-// LINK MANAGEMENT FUNCTIONS
-// ================================================
-
-/**
- * Checks if a link exists and returns its type
- * @param {string} token - The link token
- * @returns {Object} { exists: boolean, passwordless: boolean }
- */
 function checkLinkExists(token) {
   const props = PropertiesService.getScriptProperties();
   const key = 'ot_' + token;
@@ -334,7 +355,6 @@ function checkLinkExists(token) {
     const record = JSON.parse(storedJson);
     const now = new Date().getTime();
     
-    // Check if expired or used
     if (now > record.expiry || record.used === true) {
       props.deleteProperty(key);
       return { exists: false };
@@ -350,30 +370,6 @@ function checkLinkExists(token) {
   }
 }
 
-/**
- * Revokes a link before it expires
- * @param {string} token - The link token
- * @returns {Object} { success: boolean, message: string }
- */
-function revokeLink(token) {
-  const props = PropertiesService.getScriptProperties();
-  const key = 'ot_' + token;
-  
-  if (props.getProperty(key)) {
-    props.deleteProperty(key);
-    return { success: true, message: 'Link revoked successfully' };
-  }
-  
-  return { success: false, message: 'Link not found' };
-}
-
-// ================================================
-// CLEANUP FUNCTION (Run on time trigger)
-// ================================================
-
-/**
- * Cleans up expired and used links (run hourly via trigger)
- */
 function cleanupExpired() {
   const props = PropertiesService.getScriptProperties();
   const all = props.getProperties();
@@ -389,57 +385,11 @@ function cleanupExpired() {
           count++;
         }
       } catch(e) {
-        // If data is corrupted, delete it
         props.deleteProperty(key);
         count++;
       }
     }
   });
   
-  console.log('Cleaned up ' + count + ' expired/used links');
-}
-
-// ================================================
-// TEST FUNCTIONS (For debugging)
-// ================================================
-
-/**
- * Test function to verify encryption/decryption works
- */
-function testEncryption() {
-  try {
-    const testText = "My Secret Password: 12345";
-    const testPassword = "Test123!";
-    
-    console.log("Testing encryption...");
-    const encrypted = encryptSecret(testText, testPassword);
-    console.log("✅ Encrypted successfully");
-    
-    console.log("Testing decryption...");
-    const decrypted = decryptSecret(
-      encrypted.encrypted, 
-      testPassword, 
-      encrypted.iv, 
-      encrypted.salt,
-      encrypted.hmac
-    );
-    
-    if (testText === decrypted) {
-      console.log("✅ Test passed! Encryption/Decryption working correctly.");
-      return { success: true, message: "Test passed!" };
-    } else {
-      console.log("❌ Test failed! Decrypted text doesn't match original.");
-      return { success: false, message: "Test failed!" };
-    }
-  } catch (e) {
-    console.log("❌ Test error: " + e.message);
-    return { success: false, message: "Test error: " + e.message };
-  }
-}
-
-/**
- * Creates a test link for debugging
- */
-function createTestLink() {
-  return generateLink("Test123!", "This is a test secret message", false);
+  return count;
 }
