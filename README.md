@@ -5,7 +5,7 @@
 
 ---
 
-#End-to-End Encrypted Secret Sharing Tool
+## End-to-End Encrypted Secret Sharing Tool
 
 A secure, zero-knowledge web application built with Google Apps Script and the browser Web Crypto API. It allows users to create self-destructing, one-time secret notes protected either by a client-side password or an auto-generated URL decryption key.
 
