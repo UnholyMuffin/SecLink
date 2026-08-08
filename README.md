@@ -5,58 +5,74 @@
 
 ---
 
-The One-Time Link Generator is a secure, lightweight web application built with Google Apps Script. It allows you to share sensitive information through single-use, password-protected links. Each link can be opened only once, expires automatically after one hour, and requires the recipient to enter a password before the secret is revealed.
+#End-to-End Encrypted Secret Sharing Tool
+
+A secure, zero-knowledge web application built with Google Apps Script and the browser Web Crypto API. It allows users to create self-destructing, one-time secret notes protected either by a client-side password or an auto-generated URL decryption key.
+
+---
 
 ## Features
 
-### One-time access  
-Each generated link is valid for a single use. After successful access, the stored data is deleted immediately.
+* **End-to-End Encryption (E2EE)**: Messages are encrypted inside the browser using AES-GCM (256-bit) before transmission. The unencrypted text never touches the server.
 
-### Password protection  
-You define a custom password that the recipient must enter. The application stores only a SHA‑256 hash of the password, never the password itself.
 
-### Custom secret messages  
-You can securely share any text-based secret such as credentials, notes, or codes. The secret is stored server-side and never appears in the URL.
+* **Flexible Security Options**:
+* **Password Protected**: Derives AES keys via PBKDF2 (100,000 iterations + SHA-256).
 
-### Automatic expiration  
-Links expire after one hour. Expired or used entries are removed to maintain security and reduce storage.
 
-### Server-side storage  
-All data is stored in Script Properties on the server side. No sensitive information is exposed to the client until the password is verified.
+* **Passwordless**: Generates a 256-bit key embedded directly in the URL hash fragment. The key is never sent to Google servers during HTTP requests.
 
-### Optional cleanup  
-A cleanup function is included to remove expired or used entries. It can be scheduled using a time-based trigger.
 
-## How It Works
 
-1. You generate a link by providing:
-   - A password  
-   - A secret message  
 
-2. The system:
-   - Generates a unique token  
-   - Hashes the password using SHA‑256  
-   - Stores the hashed password, secret, expiry timestamp, and usage flag  
-   - Returns a one-time URL containing the token  
+* **One-Time Burn and Expiry**: Payloads self-destruct instantly upon retrieval or auto-expire after 1 hour.
 
-3. The recipient opens the link and enters the password. If the password is correct and the link is valid:
-   - The secret is returned  
-   - The stored record is deleted immediately  
 
-If the link is expired, already used, or the password is incorrect, access is denied with a clear error message.
+* **Built-in Rate Limiting**: Script locking and windowed rate-limiting prevent abuse (up to 5 links per minute per user).
 
-## Use Cases
 
-- Sharing credentials securely  
-- Sending private notes that should not persist  
-- Delivering one-time codes or sensitive information  
-- Avoiding exposure of secrets in email or chat history  
+* **Zero Infrastructure Cost**: Runs completely serverless using Google Apps Script infrastructure.
 
-## Security Notes
 
-- Passwords are never stored in plain text.  
-- Secrets are deleted after first successful access.  
-- Expired links are automatically invalidated.  
-- No data is exposed in the URL except the token.  
 
 ---
+
+## Technical Stack
+
+* **Frontend**: HTML5, CSS3, JavaScript (Web Crypto API for in-browser encryption)
+
+
+* **Backend Service**: Google Apps Script (`PropertiesService`, `LockService`, `Session`)
+
+
+* **Cryptographic Standards**:
+* Algorithm: AES-GCM (256-bit)
+
+
+* Key Derivation: PBKDF2 with 100,000 iterations
+
+
+* Initialization Vector: 12-byte random array
+
+
+
+
+
+---
+
+## Setup and Deployment
+
+1. Go to Google Apps Script and create a new project.
+2. Replace the contents of `Code.gs` with the provided script.
+
+
+3. Create an `index.html` file in the project editor and paste the HTML/JS code.
+
+
+4. Click **Deploy** > **New deployment**.
+5. Select **Web app**:
+* Set **Execute as** to *Me*.
+* Set **Who has access** to *Anyone*.
+
+
+6. Deploy the project and use the web app URL to share secure notes.
