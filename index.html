@@ -4,7 +4,7 @@
   <base target="_top">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>🔐 One-Time Link</title>
+  <title>🔐 Private Link</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -88,7 +88,6 @@
     #resultView, #recipientResultView { text-align: center; padding: 20px 0; }
     #resultView .result-icon, #recipientResultView .result-icon { font-size: 60px; display: block; margin-bottom: 15px; }
     
-    /* DISTINGUISHED GENERATED LINK BOX */
     #resultView .result-link {
       background: #f0fff4;
       padding: 20px;
@@ -160,30 +159,30 @@
       
       <!-- GENERATOR VIEW -->
       <div id="generatorView">
-        <h1 class="page-title">🔐 End-to-End Encrypted Link</h1>
+        <h1 class="page-title">🔐 Share a Secret Note</h1>
         
         <div class="form-group">
-          <label for="linkPassword">🔑 Passphrase</label>
-          <input type="password" id="linkPassword" placeholder="Set a decryption passphrase">
+          <label for="linkPassword">🔑 Password (Optional)</label>
+          <input type="password" id="linkPassword" placeholder="Set a password to unlock this note">
         </div>
         
         <div class="checkbox-group">
           <input type="checkbox" id="passwordlessToggle">
           <label for="passwordlessToggle">
-            🔓 Passwordless Link
-            <span class="hint">(Encryption key stored in URL hash fragment)</span>
+            🔓 No Password Required
+            <span class="hint">(Anyone with the link can open it)</span>
           </label>
         </div>
         
         <div class="form-group">
-          <label for="secretMessage">📦 Secret Payload</label>
-          <textarea id="secretMessage" placeholder="Enter sensitive text to share..."></textarea>
+          <label for="secretMessage">📦 Secret Message</label>
+          <textarea id="secretMessage" placeholder="Type or paste your sensitive note here..."></textarea>
         </div>
         
-        <button class="btn" id="generateBtn">✨ Encrypt & Create Link</button>
+        <button class="btn" id="generateBtn">✨ Create Secret Link</button>
         
         <div id="rateLimitInfo" class="rate-limit-info">
-          ⏳ <span class="remaining">5</span> links remaining this minute
+          ⏳ You can create <span class="remaining">5</span> more links this minute
         </div>
         
         <div id="generatorMessage" class="message"></div>
@@ -192,12 +191,12 @@
       <!-- GENERATOR RESULT VIEW -->
       <div id="resultView">
         <span class="result-icon">✅</span>
-        <h2 style="color: #2d3748; margin-bottom: 10px;">Link Generated</h2>
+        <h2 style="color: #2d3748; margin-bottom: 10px;">Link Ready!</h2>
         <div class="result-link">
           <input type="text" id="resultLinkInput" readonly>
           <button id="resultCopyBtn">📋 Copy Link</button>
         </div>
-        <span class="badge" style="background: #fed7d7; color: #c53030;">⏳ 1 hour • Self-Destructs on Read</span>
+        <span class="badge" style="background: #fed7d7; color: #c53030;">⏳ Expires in 1 hour • Self-destructs after viewing</span>
       </div>
       
       <!-- RECIPIENT VIEW -->
@@ -206,15 +205,15 @@
       <!-- RECIPIENT RESULT VIEW -->
       <div id="recipientResultView">
         <span class="result-icon">🔓</span>
-        <h2 style="color: #2d3748;">Secret Decrypted</h2>
+        <h2 style="color: #2d3748;">Secret Message</h2>
         
         <div class="result-secret-box">
-          <div class="result-secret-label">📋 Decrypted Message</div>
+          <div class="result-secret-label">📋 Your Message</div>
           <div class="result-secret-content" id="recipientResultSecret"></div>
         </div>
         
         <div class="result-destroyed">
-          ⚠️ Payload destroyed from server. Refreshing will make this link inaccessible.
+          ⚠️ This message has been permanently deleted from the server. If you refresh, it will be gone forever.
         </div>
       </div>
       
@@ -224,10 +223,6 @@
   <script>
     (function() {
       "use strict";
-
-      // ================================================
-      // WEB CRYPTO API (AES-256-GCM + PBKDF2)
-      // ================================================
 
       function arrayBufferToBase64(buffer) {
         let binary = '';
@@ -351,10 +346,6 @@
         return dec.decode(decryptedBuffer);
       }
 
-      // ================================================
-      // UI CONTROLLER
-      // ================================================
-
       const loadingState = document.getElementById('loadingState');
       const generatorView = document.getElementById('generatorView');
       const recipientView = document.getElementById('recipientView');
@@ -407,11 +398,11 @@
           if (this.checked) {
             passField.disabled = true;
             passField.value = '';
-            passField.placeholder = 'No passphrase required (Key in URL hash)';
+            passField.placeholder = 'No password needed (Link opens directly)';
             passField.style.opacity = '0.5';
           } else {
             passField.disabled = false;
-            passField.placeholder = 'Set a decryption passphrase';
+            passField.placeholder = 'Set a password to unlock this note';
             passField.style.opacity = '1';
           }
         });
@@ -423,16 +414,16 @@
           const isPasswordless = toggle.checked;
 
           if (!isPasswordless && !password) {
-            showMessage('generatorMessage', '❌ Please set a passphrase');
+            showMessage('generatorMessage', '❌ Please set a password');
             return;
           }
           if (!secret) {
-            showMessage('generatorMessage', '❌ Secret payload cannot be empty');
+            showMessage('generatorMessage', '❌ Message box cannot be empty');
             return;
           }
 
           generateBtn.disabled = true;
-          generateBtn.textContent = '⏳ Encrypting Client-Side...';
+          generateBtn.textContent = '⏳ Securing Message...';
           hideMessage('generatorMessage');
 
           try {
@@ -441,7 +432,7 @@
             google.script.run
               .withSuccessHandler(function(res) {
                 generateBtn.disabled = false;
-                generateBtn.textContent = '✨ Encrypt & Create Link';
+                generateBtn.textContent = '✨ Create Secret Link';
 
                 if (res && res.url) {
                   let finalUrl = res.url;
@@ -454,8 +445,8 @@
               })
               .withFailureHandler(function(err) {
                 generateBtn.disabled = false;
-                generateBtn.textContent = '✨ Encrypt & Create Link';
-                showMessage('generatorMessage', err.message || '❌ Server error');
+                generateBtn.textContent = '✨ Create Secret Link';
+                showMessage('generatorMessage', err.message || '❌ Something went wrong on our end');
               })
               .saveSecretPayload({
                 ciphertext: encrypted.ciphertext,
@@ -466,8 +457,8 @@
 
           } catch (e) {
             generateBtn.disabled = false;
-            generateBtn.textContent = '✨ Encrypt & Create Link';
-            showMessage('generatorMessage', '❌ Encryption failed: ' + e.message);
+            generateBtn.textContent = '✨ Create Secret Link';
+            showMessage('generatorMessage', '❌ Unable to secure message: ' + e.message);
           }
         });
 
@@ -492,7 +483,7 @@
         recipientView.innerHTML = `
           <div class="recipient-content">
             <div class="loader" style="margin: 40px auto 20px;"></div>
-            <h2 class="title" style="font-weight: 400;">Checking link status...</h2>
+            <h2 class="title" style="font-weight: 400;">Checking link...</h2>
           </div>
         `;
 
@@ -502,9 +493,9 @@
               recipientView.innerHTML = `
                 <div class="recipient-content">
                   <span class="icon-large">❌</span>
-                  <h1 class="title">Secret Not Found</h1>
+                  <h1 class="title">Message Not Found</h1>
                   <div class="result-destroyed" style="margin-top: 20px;">
-                    ⚠️ This secret has expired or was already read and destroyed.
+                    ⚠️ This link has expired or the message has already been viewed and deleted.
                   </div>
                 </div>
               `;
@@ -517,20 +508,20 @@
             recipientView.innerHTML = `
               <div class="recipient-content">
                 <span class="icon-large">🔐</span>
-                <h1 class="title">One-Time Secret Payload</h1>
-                <p style="color: #718096; margin-bottom: 20px;">Fetching this secret burns it permanently from the server.</p>
+                <h1 class="title">You Received a Secret Note</h1>
+                <p style="color: #718096; margin-bottom: 20px;">Opening this message will permanently delete it from our server.</p>
                 
                 <div class="recipient-box">
                   ${isPasswordless ? `
                     <button id="unlockBtn" class="btn" style="background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);">
-                      🔓 Fetch & Decrypt Secret
+                      🔓 View Secret Message
                     </button>
                   ` : `
                     <div style="margin-bottom: 20px;">
-                      <label style="font-weight: 600; color: #4a5568;">🔑 Enter Decryption Passphrase</label>
-                      <input type="password" id="recipientPassword" placeholder="Passphrase" style="margin-top: 8px;">
+                      <label style="font-weight: 600; color: #4a5568;">🔑 Enter Password</label>
+                      <input type="password" id="recipientPassword" placeholder="Password" style="margin-top: 8px;">
                     </div>
-                    <button id="unlockBtn" class="btn">🔓 Fetch & Decrypt</button>
+                    <button id="unlockBtn" class="btn">🔓 Unlock Message</button>
                   `}
                   <div id="recipientMessage" class="message"></div>
                 </div>
@@ -544,27 +535,27 @@
               const passwordInput = !isPasswordless && pwdField ? pwdField.value.trim() : '';
 
               if (!isPasswordless && !passwordInput) {
-                showMessage('recipientMessage', '❌ Passphrase is required');
+                showMessage('recipientMessage', '❌ Password is required');
                 return;
               }
 
               unlockBtn.disabled = true;
-              unlockBtn.textContent = '⏳ Fetching & Decrypting...';
+              unlockBtn.textContent = '⏳ Loading Message...';
               hideMessage('recipientMessage');
 
               google.script.run
                 .withSuccessHandler(async function(payloadRes) {
                   if (!payloadRes || !payloadRes.success) {
                     unlockBtn.disabled = false;
-                    unlockBtn.textContent = '🔓 Fetch & Decrypt';
-                    showMessage('recipientMessage', payloadRes.message || '❌ Decryption failed');
+                    unlockBtn.textContent = '🔓 Unlock Message';
+                    showMessage('recipientMessage', payloadRes.message || '❌ Unable to open message');
                     return;
                   }
 
                   try {
                     const keyOrPass = isPasswordless ? fragmentKey : passwordInput;
                     if (isPasswordless && !keyOrPass) {
-                      throw new Error('Key missing from URL fragment');
+                      throw new Error('Link appears to be incomplete');
                     }
 
                     const plaintext = await decryptData(
@@ -579,13 +570,13 @@
                     document.getElementById('recipientResultSecret').textContent = plaintext;
                   } catch (err) {
                     unlockBtn.disabled = false;
-                    unlockBtn.textContent = '🔓 Fetch & Decrypt';
-                    showMessage('recipientMessage', '❌ Decryption failed: Invalid passphrase or corrupted key.');
+                    unlockBtn.textContent = '🔓 Unlock Message';
+                    showMessage('recipientMessage', '❌ Incorrect password or broken link.');
                   }
                 })
                 .withFailureHandler(function(err) {
                   unlockBtn.disabled = false;
-                  unlockBtn.textContent = '🔓 Fetch & Decrypt';
+                  unlockBtn.textContent = '🔓 Unlock Message';
                   showMessage('recipientMessage', '❌ ' + err.message);
                 })
                 .fetchSecretPayload(token);
